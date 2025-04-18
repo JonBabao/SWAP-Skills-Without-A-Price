@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { createClient } from '../../../lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import Link from "next/link";
 
 const Login: React.FC = () => {
     const supabase = createClient();
@@ -53,6 +54,20 @@ const Login: React.FC = () => {
 
         router.push("/");
     };
+
+    const handleForgotPassword = async () => {
+        if (!identifier) {
+            alert("Enter your email to reset your password.");
+            return;
+        }
+
+        const { error } = await supabase.auth.resetPasswordForEmail(identifier);
+        if (error) {
+            alert("Failed to send password reset email. Try again.");
+        } else {
+            alert("Password reset email sent!");
+        }
+    };
     
     return(
         <div>
@@ -73,9 +88,24 @@ const Login: React.FC = () => {
                     placeholder="Password"
                     required
                 />
+                <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                >
+                    Forgot Password?
+                </button>
                 <button type="submit">
                     Submit
                 </button>
+
+                <div>
+                    <p>Not a member?&nbsp;</p>
+                    <Link href="/auth/register">
+                        <button type="button">
+                            Register now
+                        </button>
+                    </Link>
+                </div>
             </form>
         </div>
     );
