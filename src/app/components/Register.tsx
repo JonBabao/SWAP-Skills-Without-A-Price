@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { createClient } from '../../../lib/supabase/client';
+import Link from "next/link";
 
 const Register: React.FC = () => {
     const supabase = createClient();
@@ -89,6 +90,14 @@ const Register: React.FC = () => {
             <button type="submit">
                 Sign Up
             </button>
+            <div>
+                <p>Have an account already?&nbsp;</p>
+                <Link href="/auth/login">
+                    <button type="button">
+                        Login
+                    </button>
+                </Link>
+            </div>
         </form>
     );
 };
