@@ -13,7 +13,10 @@
 
 <p align="center">
   <b>CS-3202</b><br>
-  <a href="https://github.com/JonBabao">Jon Gabriel A. Babao</a><br>
+  <a href="https://github.com/FaithAllyson">Faith Allyson R. Mendoza</a><br>
+  <a href="https://github.com/chustinecantal">Chustine Mae B. Cantal</a><br>
+  <a href="https://github.com/JonBabao">Jon Endrick M. Babao</a><br>
+  <a href="https://github.com/reinarmedilla">Reina Liz B. Armedilla</a><br>
 </p>
 
 <hr>
