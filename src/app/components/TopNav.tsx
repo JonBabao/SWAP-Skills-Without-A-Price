@@ -7,7 +7,7 @@ import BlackButton from "../styles/blackButton";
 const TopNav: React.FC = () => {
 
     return(
-        <nav className="fixed lg:flex flex-row items-center bg-[#FDFCF9]/75 inset-0 z-50 w-full h-20 text-[#2e2e2e]">
+        <nav className="hidden fixed lg:flex flex-row items-center bg-[#FDFCF9]/75 inset-0 z-50 w-full h-20 text-[#2e2e2e]">
             <div className="flex flex-grow flex-row items-center ml-6">
                 <img src={Logo.src} alt="logo" />
                 <p className="montserrat font-extrabold text-lg ml-2">SWAP: Skills Without A Price</p>
