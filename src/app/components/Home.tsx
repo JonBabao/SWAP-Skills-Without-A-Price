@@ -1,3 +1,7 @@
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { createClient } from '../../../lib/supabase/client';
 import HomeImage from "../../../public/images/home_image.png"
 import OrangeButton from "../styles/orangeButton";
 import ShareKnowledge from "../../../public/images/shareKnowledgeImage.png"
@@ -5,8 +9,25 @@ import BrowseSkills from "../../../public/images/browseSkillsImage.png"
 import RequestExchange from "../../../public/images/requestExchangeImage.png"
 import SignUpImage from "../../../public/images/signUpImage.png"
 import Line from "../../../public/images/line.png"
+import { useRouter } from "next/navigation";
 
-export default function Home() {
+
+const Home: React.FC = () => {
+  const supabase = createClient();
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkIfAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.push('/auth/login');
+      }
+    }
+    checkIfAuth()
+  }, [])
+
+
   return (
     <div className="flex flex-col items-center justify-center w-full">
       <section className="flex flex-row items-center justify-center">
@@ -103,3 +124,5 @@ export default function Home() {
     </div>
   );
 }
+
+export default Home;
