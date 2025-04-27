@@ -7,7 +7,7 @@ export const createClient = () =>
     {
       auth: {
         persistSession: true,
-        detectSessionInUrl: false
+        autoRefreshToken: true
       }
     }
   );
