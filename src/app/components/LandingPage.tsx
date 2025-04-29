@@ -12,7 +12,7 @@ import Line from "../../../public/images/line.png"
 import { useRouter } from "next/navigation";
 
 
-const Home: React.FC = () => {
+const LandingPage: React.FC = () => {
   const supabase = createClient();
   const router = useRouter();
 
@@ -125,4 +125,4 @@ const Home: React.FC = () => {
   );
 }
 
-export default Home;
+export default LandingPage;
