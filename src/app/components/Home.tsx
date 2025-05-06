@@ -4,13 +4,14 @@ import React, { useState, useEffect } from 'react';
 import Image from '../../../public/images/logo.png'
 import LocationIcon from '../../../public/images/locationIcon.png'
 import FlagIcon from '../../../public/images/flagIcon.png'
+import dashboardStars from '../../../public/images/dashboardStars.png'
+import placeholder from '../../../public/images/placeholderCalendar.png'
 
 const Home: React.FC = () => {
     return(
         <div className="flex flex-row">
             <section className="flex flex-col w-128 mt-20 rounded-tr-lg items-center bg-[#ffffff] border-[#CBD7DF] border-1">
-                <img 
-                    src={Image.src}
+                <img src={Image.src}
                     alt="Image"
                 />
                 <h2>Juan Dela Cruz</h2>
@@ -44,14 +45,37 @@ const Home: React.FC = () => {
                     </div>
                 </div>
             </section>
-            <section>
-                <div className="flex flex-row gap-8">
-                    <a>Overview</a>
-                    <a>Skill Exchange</a>
-                    <a>Portfolio</a>
-                    <a>Reviews</a>
-                </div>
+            <section className="flex flex-col mx-8">
+                <section>
+                    <div className="flex flex-row gap-8">
+                        <a>Overview</a>
+                        <a>Skill Exchange</a>
+                        <a>Portfolio</a>
+                        <a>Reviews</a>
+                    </div>
+                </section>
+                <section>
+                    <div className="swapOrangeBg flex flex-row px-8 py-4 h-64 text-white rounded-xl">
+                        <div>
+                            <p className="mb-6">LEARN. SHARE. CONNECT.</p>
+                            <p className="text-white text-3xl font-semibold break-words">Build your skills bank — one swap at a time.</p>
+                            <button
+                                className="mt-8 p-6 rounded-full bg-[#171717]"
+                            >
+                                Join Now
+
+                            </button>
+                        </div>
+                        <img 
+                            src={dashboardStars.src}
+                            className="overflow h-72 -mt-8 ml-8"
+                        />
+                    </div>
+                </section>  
             </section>
+            <img
+                src={placeholder.src}
+            />
 
         </div>
     );
