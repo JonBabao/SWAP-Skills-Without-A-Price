@@ -24,6 +24,8 @@ const Home: React.FC = () => {
     const [progress, setProgress] = useState<any[]>([]); 
     const [mentors, setMentors] = useState<any[]>([]);
 
+    const [activeTab, setActiveTab] = useState<'overview' | 'exchange' | 'portfolio' | 'reviews'>('overview');
+
     const [showAllHistory, setShowAllHistory] = useState(false);
 
     const handleOpenHistory = () => setShowAllHistory(true);
@@ -242,12 +244,34 @@ const Home: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex flex-col">
-                    <nav className="flex flex-row gap-16 bg-white p-4 border-[#CBD7DF] border-1 rounded-xl mx-4 mt-20 mb-4">
-                        <a className="ml-8">Overview</a>
-                        <a>Skill Exchange</a>
-                        <a>Portfolio</a>
-                        <a>Reviews</a>
-                    </nav>
+                    <nav className="flex flex-row gap-16 bg-white px-4 pb-1 border-[#CBD7DF] border-1 rounded-xl mx-4 mt-20 mb-4">
+                        <button
+                            className={`ml-8 ${activeTab === 'overview' ? 'swapOrangeText font-bold border-b-4 pt-4 pb-3 border-orange-500 -mb-1' : 'mt-1'}`}
+                            onClick={() => setActiveTab('overview')}
+                        >
+                            Overview
+                        </button>
+                        <button
+                            className={`${activeTab === 'exchange' ? 'swapOrangeText font-bold border-b-4 pt-4 pb-3 border-orange-500 -mb-1' : 'mt-1'}`}
+                            onClick={() => setActiveTab('exchange')}
+                        >
+                            Skill Exchange
+                        </button>
+                        <button
+                            className={`${activeTab === 'portfolio' ? 'swapOrangeText font-bold border-b-4 pt-4 pb-3 border-orange-500 -mb-1' : 'mt-1'}`}
+                            onClick={() => setActiveTab('portfolio')}
+                        >
+                            Portfolio
+                        </button>
+                        <button
+                            className={`${activeTab === 'reviews' ? 'swapOrangeText font-bold border-b-4 pt-4 pb-3 border-orange-500 -mb-1' : 'mt-1'}`}
+                            onClick={() => setActiveTab('reviews')}
+                        >
+                            Reviews
+                        </button>
+                        </nav>
+
+                    {activeTab === 'overview' && (
                     <div className="flex flex-row">
                         <section className="flex flex-col mx-4">
 
@@ -359,7 +383,7 @@ const Home: React.FC = () => {
                             <div>
                                 <div className="flex justify-between">
                                     <p className="font-semibold my-2">Your Mentor</p>
-                                    <button onClick={handleOpenHistory} className="text-sm text-gray-500 hover:underline">See all</button>
+                                    <button onClick={openMentorModal} className="text-sm text-gray-500 hover:underline">See all</button>
                                 </div>
                                 
                                 <div className="bg-white rounded-xl p-6 text-xs text-left">
@@ -413,6 +437,34 @@ const Home: React.FC = () => {
                         </section>
                         <CalendarScheduler />
                     </div>
+                    )}
+
+                    {activeTab === 'exchange' && (
+                    <div>
+              
+                        <h2 className="text-xl font-bold mb-4">Skill Exchange</h2>
+       
+                    </div>
+                    )}
+
+                    {activeTab === 'portfolio' && (
+                    <div>
+                   
+                        <h2 className="text-xl font-bold mb-4">Portfolio</h2>
+                        <p>This is the Portfolio tab.</p>
+                    </div>
+                    )}
+
+                    {activeTab === 'reviews' && (
+                    <div>
+                   
+                        <h2 className="text-xl font-bold mb-4">Reviews</h2>
+                        <p>This is the Reviews tab.</p>
+                    </div>
+                    )}
+
+
+                    
                 </div></>
             ) : (<p>Loading Page</p>)}   
 
@@ -470,7 +522,7 @@ const Home: React.FC = () => {
             )}
 
             {showAllMentors && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35">
                     <div className="bg-white w-full max-w-4xl p-6 rounded shadow-lg max-h-[90vh] overflow-y-auto">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-lg font-semibold">All Mentors</h2>
