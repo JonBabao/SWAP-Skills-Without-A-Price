@@ -27,7 +27,8 @@ interface Lesson {
 const LessonViewer = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [lessons, setLessons] = useState<Lesson[]>([]); // Typed properly
+  const [lessons, setLessons] = useState<Lesson[]>([]); 
+  const [allLessons, setAllLessons] = useState<Lesson[]>([]);
 
   const supabase = createClient();
 
@@ -76,6 +77,32 @@ const LessonViewer = () => {
     } else {
       setLessons((lessonsData as Lesson[]) || []);
     }
+
+    const { data: allLessonsData, error: allLessonsError } = await supabase
+      .from("lessons")
+      .select(
+        `
+        id,
+        title,
+        date_time,
+        mode,
+        user_id (
+          username
+        ),
+        mentor_id (
+          username
+        )
+      `
+      )
+      .or(`user_id.eq.${user.id},mentor_id.eq.${user.id}`); 
+
+      if (allLessonsError) {
+        console.error("Supabase error:", allLessonsError);
+      } else {
+        setAllLessons((allLessonsData as Lesson[]) || []);
+      }
+    
+
   };
 
   const renderHeader = () => (
@@ -183,10 +210,10 @@ const LessonViewer = () => {
               </button>
             </div>
 
-            {lessons.length === 0 ? (
+            {allLessons.length === 0 ? (
               <p className="text-gray-500 text-sm">No lessons scheduled.</p>
             ) : (
-              lessons.map(lesson => (
+              allLessons.map(lesson => (
                 <div key={lesson.id} className="border border-[#CBD7DF] rounded-xl p-4 px-8 shadow-sm mb-4 space-y-2">
                   <h4 className="font-bold text-md flex items-center">
                     <span className="text-red-500 mr-2 text-xl">•</span>
