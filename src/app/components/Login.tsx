@@ -49,7 +49,7 @@ const Login: React.FC = () => {
         console.log("userid:" + user.id)
     
         const { data: existingProfile, error: profileError } = await supabase
-            .from("profiles")
+            .from("users")
             .select("id, username, email")
             .eq("id", user.id)
             .single();
@@ -57,7 +57,7 @@ const Login: React.FC = () => {
         if (!existingProfile) {
             console.log("profile not existing")
             const { error: insertError } = await supabase
-                .from("profiles")
+                .from("users")
                 .insert([{ id: user.id, username: user.user_metadata.username, email: user.email }]);
     
             if (insertError) {
