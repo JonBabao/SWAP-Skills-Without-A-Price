@@ -7,12 +7,14 @@ import Notifcation from '../../../public/images/notification.png';
 import MessageIcon from '../../../public/images/message.png';
 import UploadButton from '../../../public/images/upload.png';
 import AddButton from '../../../public/images/add btn.png';
+import SaveButton from '../../../public/images/save btn.png';
+import EditProfileButton from '../../../public/images/edit photo.png';
 
 const EditProfile: React.FC = () => {
     return (
         <>
-        {/* Hindi pa to okay aayusin ko pa*/}
-            <div className="seashell w-[1920px] h-[112px] relative">
+            {/* Di pa sure if goods sya tignan sa inyo hehe */}
+            <div className="seashell w-[1920px] h-[150px] relative">
                 <img src="/images/logo.png" className="absolute left-[43px] top-[28px] w-16 h-[55px]" />
                 <div className="absolute left-[136px] top-[24px] w-[712px] h-[63px] bg-white rounded-[5px] flex items-center px-6 shadow-sm border border-[0.5px] border-[#BFB6B6]">
                     <img src="/images/search icon.png" alt="Search" className="w-5 h-5 mr-3" />
@@ -21,13 +23,17 @@ const EditProfile: React.FC = () => {
                 <img src="/images/message.png" alt="Message" className="absolute left-[1629px] top-[33px] w-[45px] h-[45px] cursor-pointer" />
                 <img src="/images/notification.png" alt="Notification" className="absolute left-[1697px] top-[33px] w-[45px] h-[45px] cursor-pointer" />
                 <img src="/images/man 1.png" alt="Profile" className="absolute left-[1775px] top-[21px] w-[70px] h-[70px] rounded-full cursor-pointer" />
+                <div className="absolute left-[53px] top-[100px] text-[24px] font-semibold text-[#000000]">
+                    My Profile &gt; Edit Profile
+                </div>
+                <img src="/images/save btn.png" alt="Save Button" className="absolute left-[1684px] top-[100px] w-auto h-auto cursor-pointer" />
             </div>
 
             <div className="w-full px-20 mt-10 flex gap-10 justify-center">
                 {/* Left Div */}
                 <div className="w-[833px] h-[799px] bg-white shadow rounded-[5px] p-6">
                     <div className="w-[140px] h-[140px] rounded-full overflow-hidden mx-auto mt-[30px] mb-6">
-                        <img src="/images/man 1.png" alt="User Profile" className="w-full h-full object-cover cursor-pointer" />
+                        <img src="/images/edit photo.png" alt="User Profile" className="w-full h-full object-cover cursor-pointer" />
                     </div>
                     <div className="flex gap-6 mb-4">
                         <div className="flex flex-col">
