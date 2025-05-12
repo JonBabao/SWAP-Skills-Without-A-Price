@@ -15,7 +15,7 @@ import homeJoinButton from '../../../public/images/homeJoinButton.png'
 import EditIcon from '../../../public/images/editIcon.png'
 import SkillsPlaceholder from '../../../public/images/skillsPlaceholder.jpg'
 import CalendarScheduler from './CalendarScheduler'
-import { MessageCircle, Eye, SquareX, Check, X } from 'lucide-react';
+import { MessageCircle, Eye, SquareX, Check, X, ArrowDownUp } from 'lucide-react';
 
 const Home: React.FC = () => {
     const supabase = createClient();
@@ -23,7 +23,8 @@ const Home: React.FC = () => {
     const [skillsOffered, setSkillsOffered] = useState<any[]>([]);
     const [sessions, setSessions] = useState<any[]>([]);
     const [progress, setProgress] = useState<any[]>([]); 
-    const [mentors, setMentors] = useState<any[]>([]);
+    const [swaps, setSwaps] = useState<any[]>([]);
+    const [schedules, setSchedules] = useState<any[]>([]);
 
     const sessionss = Array(3).fill(0); 
     const pending = Array(3).fill(0);  
@@ -40,6 +41,16 @@ const Home: React.FC = () => {
 
     const openMentorModal = () => setShowAllMentors(true);
     const closeMentorModal = () => setShowAllMentors(false);
+
+    const [showAllSwaps, setShowAllSwaps] = useState(false);
+
+    const openAllSwaps = () => setShowAllSwaps(true);
+    const closeAllSwaps = () => setShowAllSwaps(false);
+
+    const [showAllCompletedSwaps, setShowAllCompletedSwaps] = useState(false);
+
+    const openAllCompletedSwaps = () => setShowAllCompletedSwaps(true);
+
 
 
 
@@ -63,17 +74,22 @@ const Home: React.FC = () => {
                     .select('skills (id, name, thumbnail_url)')
                     .eq('user_id', authId)
 
-                const { data: mentorData, error } = await supabase
-                    .from('mentors')
+                const { data: swapData, error } = await supabase
+                    .from('swaps')
                     .select(`
                         last_session_date,
                         status,
                         rating,
-                        skill:skill_id ( name ),
-                        mentor:mentor_id ( username, avatar_url ),
-                        user:user_id ( username )
+                        user_skill:user_skill ( name ),
+                        mentor_skill:mentor_skill ( name ),
+                        mentor:mentor_id ( username, email, id, avatar_url ),
+                        user:user_id ( username, email, id, avatar_url ),
+                        user_skill_progress,
+                        mentor_skill_progress,
+                        date_completed,
+                        completed
                     `)
-                    .eq('user_id', authId)
+                    .or(`user_id.eq.${authId},mentor_id.eq.${authId}`)
                     .order('last_session_date', { ascending: false }); 
 
                 const { data: sessionData } = await supabase
@@ -99,12 +115,19 @@ const Home: React.FC = () => {
                         skill:skill_id ( name )
                     `)
                     .eq('user_id', authId);
+
+                const { data: scheduleData } = await supabase
+                    .from('schedules')
+                    .select('user_id, mentor_id, date_time')
+                    .or(`user_id.eq.${authId},mentor_id.eq.${authId}`)
+                    .order('date_time', { ascending: false }); 
             
                 setUserData(user);
                 setSkillsOffered(skills);
                 setSessions(sessionData);
                 setProgress(progressData);
-                setMentors(mentorData);
+                setSwaps(swapData);
+                setSchedules(scheduleData);
                 
             }
         };
@@ -248,7 +271,7 @@ const Home: React.FC = () => {
                         )}
                     </div>
                 </div>
-                <div className="flex flex-col">
+                <div className="flex flex-col flex-grow">
                     <nav className="flex flex-row gap-16 bg-white px-4 pb-1 border-[#CBD7DF] border-1 rounded-xl mx-4 mt-20 mb-4">
                         <button
                             className={`ml-8 ${activeTab === 'overview' ? 'swapOrangeText font-bold border-b-4 pt-4 pb-3 border-orange-500 -mb-1' : 'mt-1'}`}
@@ -393,49 +416,62 @@ const Home: React.FC = () => {
                                 
                                 <div className="bg-white rounded-xl p-6 text-xs text-left">
                                     <div className="grid grid-cols-3 text-black font-medium mb-4 text-center">
-                                    <div>Instructor Name and Last Session</div>
-                                    <div>Skill</div>
-                                    <div>Actions</div>
+                                        <div>Instructor Name and Last Session</div>
+                                        <div>Skill</div>
+                                        <div>Actions</div>
                                     </div>
 
-                                    {mentors.map((mentor, index) => (
-                                        <div
-                                            key={index}
-                                            className="grid grid-cols-3 items-center py-4 border-t border-gray-200"
-                                        >
-                                            {/* Instructor and Date */}
-                                            <div className="flex items-center justify-center space-x-4">
-                                            <img
-                                                src={mentor.mentor?.avatar_url}
-                                                alt="Instructor"
-                                                className="h-10 w-10 rounded-full"
-                                            />
+                                    
 
-                                            <div>
-                                                <p className="text-black font-medium">{mentor.mentor?.username}</p>
-                                                <p className="text-gray-500 text-sm">
-                                                {new Date(mentor.last_session_date).toLocaleDateString("en-US", {
-                                                    month: "long",
-                                                    day: "numeric",
-                                                    year: "numeric",
-                                                })}
-                                                </p>
-                                            </div>
-                                            </div>
+                                    {swaps.map((mentor, index) => {
+                                        const isCurrentUserReceiver = mentor.user.id === userData.id;
+                                        const displayedSkill = isCurrentUserReceiver
+                                            ? mentor.user_skill?.name
+                                            : mentor.mentor_skill?.name;
+                                     
+                                        const displayedPartner = isCurrentUserReceiver ? mentor.mentor : mentor.user;
 
-                                            {/* Skill */}
-                                            <div className="text-center">
-                                            <p className="text-black">{mentor.skill?.name}</p>
-                                            </div>
+                                        return (
+                                            <div
+                                                key={index}
+                                                className="grid grid-cols-3 items-center py-4 border-t border-gray-200"
+                                            >
+                                                {/* Partner and Date */}
+                                                <div className="flex items-center justify-center space-x-4">
+                                                    <img
+                                                        src={displayedPartner?.avatar_url}
+                                                        alt="Partner"
+                                                        className="h-10 w-10 rounded-full"
+                                                    />
+                                                    <div>
+                                                        <p className="text-black font-medium">
+                                                            {displayedPartner?.username}
+                                                        </p>
+                                                        <p className="text-gray-500 text-sm">
+                                                            {new Date(mentor.last_session_date).toLocaleDateString("en-US", {
+                                                                month: "long",
+                                                                day: "numeric",
+                                                                year: "numeric",
+                                                            })}
+                                                        </p>
+                                                    </div>
+                                                </div>
 
-                                            {/* Action */}
-                                            <div className="text-center">
-                                            <button className="bg-red-100 text-red-700 px-4 py-1.5 rounded-full text-xs">
-                                                Show Details
-                                            </button>
+                                                {/* Skill being received */}
+                                                <div className="text-center">
+                                                    <p className="text-black">{displayedSkill}</p>
+                                                </div>
+
+                                                {/* Action */}
+                                                <div className="text-center">
+                                                    <button className="bg-red-100 text-red-700 px-4 py-1.5 rounded-full text-xs">
+                                                        Show Details
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
+
                                 </div>
                             </div>
 
@@ -446,40 +482,80 @@ const Home: React.FC = () => {
 
                     {activeTab === 'exchange' && (
                         <div className="flex text-black">
-                            <div className="flex flex-col px-4">
-                                {/* Active Sessions */}
+                            <div className="flex flex-col px-4 min-w-172">
+                                {/* Active Swaps */}
                                 <div>
                                     <div className="flex justify-between items-center">
-                                        <h2 className=" text-lg font-semibold mb-2"><span className="text-blue-700 text-2xl">•</span> Active Sessions</h2>
-                                        <a href="#" className="text-gray-500 text-sm hover:underline">See all</a>
+                                        <h2 className=" text-lg font-semibold mb-2"><span className="text-blue-700 text-2xl">•</span> Active Swaps</h2>
+                                        <button onClick={openAllSwaps} className="text-gray-500 text-sm hover:underline">See all</button>
                                     </div>
                                     <div className="flex gap-4 flex-wrap">
-                                    {sessionss.map((_, idx) => (
-                                        <div key={idx} className="w-54 bg-white rounded-xl p-4 border border-[#FF7A59]">
-                                            <p className="text-lg font-semibold">Eloise Martin</p>
-                                            <p className="text-sm text-gray-500">@eloisemartin</p>
-                                            <div className="mt-2 text-sm space-y-2">
-                                                <p><strong>Skill offered:</strong><br />Photo Editing</p>
-                                                <p><strong>Skill requested:</strong><br />French Language</p>
-                                                <p><strong>Next session:</strong><br />May 3, 2025 – 3:00 PM</p>
-                                            </div>
-                                            <div className="flex flex-col mt-4 gap-1">
-                                                <button className="flex text-sm items-center bg-[#FF7A59] text-white px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
-                                                    <Eye className="w-4 h-4 mr-2" />
-                                                    View details
-                                                </button>
-                                                <button className="flex text-sm items-center text-white bg-[#FF7A59] px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
-                                                    <MessageCircle className="w-4 h-4 mr-2" />
-                                                    Message
-                                                </button>
-                                                <button className="flex text-sm items-center text-white bg-[#FF7A59] px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
-                                                    <SquareX className="w-4 h-4 mr-2" />
-                                                    Cancel
-                                                </button>
-                                            </div>
+                                        {swaps?.filter(swap => swap.status).length === 0 ? (
+                                            <div className="text-center text-gray-500 mt-4">No active swaps yet.</div>
+                                        ) : (
+                                        swaps
+                                            ?.filter(swap => swap.status)
+                                            .slice(0, 3)
+                                            .map((swap, idx) => {
+                                            const isUser = swap.user.id === userData.id;
+                                            const otherUser = isUser ? swap.mentor : swap.user;
+                                            const offeredSkill = isUser ? swap.user_skill?.name : swap.mentor_skill?.name;
+                                            const requestedSkill = isUser ? swap.mentor_skill?.name : swap.user_skill?.name;
+                                            const avatar_url = otherUser.avatar_url;
                                             
-                                        </div>
-                                    ))}
+                                            const nextSchedule = schedules
+                                                ?.filter(
+                                                    (s) => new Date(s.date_time).getTime() > new Date().getTime()
+                                                )
+                                                ?.sort((a, b) => new Date(a.date_time) - new Date(b.date_time))[0];
+
+                                            return (
+                                                <div key={idx} className="w-54 bg-white rounded-xl p-4 border border-[#FF7A59]">
+                                                    <div className="flex gap-2">
+                                                        <img src={avatar_url} className="w-10 h-10 rounded-full" />
+                                                        <div>
+                                                            <p className="text-base font-semibold">{otherUser?.username}</p>
+                                                            <p className="break-words max-w-30 text-xs text-gray-500">@{otherUser?.email}</p>
+                                                        </div>
+                                                    </div>
+
+
+                                                    <div className="mt-2 text-sm space-y-2">
+                                                        <p><strong>Skill offered:</strong><br />{offeredSkill}</p>
+                                                        <p><strong>Skill requested:</strong><br />{requestedSkill}</p>
+                                                        <p><strong>Next session:</strong><br />
+                                                            {nextSchedule
+                                                                ? new Date(nextSchedule.date_time).toLocaleString("en-US", {
+                                                                    month: "long",
+                                                                    day: "numeric",
+                                                                    year: "numeric",
+                                                                    hour: "2-digit",
+                                                                    minute: "2-digit",
+                                                                    })
+                                                                : "No upcoming session"}
+
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="flex flex-col mt-4 gap-1">
+                                                        <button className="flex text-sm items-center bg-[#FF7A59] text-white px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
+                                                            <Eye className="w-4 h-4 mr-2" />
+                                                            View details
+                                                        </button>
+                                                        <button className="flex text-sm items-center text-white bg-[#FF7A59] px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
+                                                            <MessageCircle className="w-4 h-4 mr-2" />
+                                                            Message
+                                                        </button>
+                                                        <button className="flex text-sm items-center text-white bg-[#FF7A59] px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
+                                                            <SquareX className="w-4 h-4 mr-2" />
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+
                                     </div>
                                 </div>
 
@@ -487,30 +563,58 @@ const Home: React.FC = () => {
                                 <div className="mt-10">
                                     <div className="flex justify-between items-center">
                                         <h2 className="text-lg font-semibold mb-2"><span className="text-green-700 text-2xl">•</span> Completed Swaps</h2>
-                                        <a href="#" className="text-gray-500 text-sm hover:underline">See all</a>
+                                        <button onClick={openAllCompletedSwaps} className="text-gray-500 text-sm hover:underline">See all</button>
                                     </div>
                                     <div className="space-y-4">
-                                    {completed.map((_, idx) => (
-                                        <div key={idx} className="rounded-xl px-4 py-5 flex flex-col items-center justify-between text-sm bg-white border border-[#FF7A59]">
-                                            <div className="flex items-center w-full gap-4 justify-between">
-                                                <div className="flex flex-col">
-                                                    <p className="font-bold">Eloise Martin</p>
-                                                    <p>@eloisemartin</p>
-                                                </div>
-                                                <p className="font-bold">Graphic Design ↔ Video Editing Basics</p>
-                                                <p>April 10, 2025</p>
-                                            </div>
-                                            <div className="flex w-full items-center justify-between mt-2">
-                                                <div className="flex items-center gap-2">
-                                                    <button className="text-sm border border-red-300 px-3 py-1 rounded-full bg-white">
-                                                        <span className="text-yellow-600 mr-2">★ ★ ★ ★ ☆</span>
-                                                        Review
-                                                    </button>
-                                                </div>
-                                                <button className="text-xs bg-[#FF7A59] hover:bg-orange-600 rounded-full px-3 font-semibold cursor-pointer text-white h-8">View Summary</button>
-                                            </div>
-                                        </div>
-                                    ))}
+                                    {swaps?.filter(swap => swap.completed).length === 0 ? (
+                                        <div className="text-center text-gray-500 mt-4">No completed swaps yet.</div>
+                                    ) : (
+                                        swaps
+                                            ?.filter(swap => swap.completed)
+                                            .map((swap, idx) => {
+                                                const isCurrentUserMentor = swap.user.id === userData.id;
+                                                const mentor = isCurrentUserMentor ? swap.mentor.username : swap.user.username;
+
+                                                const leftSkill = isCurrentUserMentor ? swap.mentor_skill?.name : swap.user_skill?.name;
+                                                const rightSkill = isCurrentUserMentor ? swap.user_skill?.name : swap.mentor_skill?.name;
+                                                const avatar_url = isCurrentUserMentor ? swap.mentor.avatar_url : swap.user.avatar_url;
+                                                const swapDate = new Date(swap.date_completed).toLocaleDateString("en-US", {
+                                                    year: "numeric",
+                                                    month: "long",
+                                                    day: "numeric",
+                                                });
+
+                                                return (
+                                                    <div key={idx} className="rounded-xl px-4 py-5 flex flex-col items-center justify-between text-sm bg-white border border-[#FF7A59]">
+                                                        <div className="flex items-center w-full gap-4 justify-between">
+                                                            <img src={avatar_url} className="h-10 w-10 rounded-full" />
+                                                            <div className="flex flex-col">
+                                                                <p className="font-bold">{mentor}</p>
+                                                                <p className="text-xs">@{swap.mentor?.email}</p>
+                                                            </div>
+                                                            <div className="flex flex-col items-center font-bold flex-grow">
+                                                                <p>{leftSkill}</p>
+                                                                <ArrowDownUp />
+                                                                <p>{rightSkill}</p>
+                                                            </div>
+                                                            
+                                                            <p className="flex flex-grow justify-end">{swapDate}</p>
+                                                        </div>
+                                                        <div className="flex w-full items-center justify-between mt-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <button className="text-sm border border-red-300 px-3 py-1 rounded-full bg-white">
+                                                                    <span className="text-yellow-600 mr-2">★ ★ ★ ★ ☆</span>
+                                                                    Review
+                                                                </button>
+                                                            </div>
+                                                            <button className="text-xs bg-[#FF7A59] hover:bg-orange-600 rounded-full px-3 font-semibold cursor-pointer text-white h-8">
+                                                                View Summary
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                    )}
                                     </div>
                                 </div>
                             </div>    
@@ -636,45 +740,193 @@ const Home: React.FC = () => {
                         <div>Actions</div>
                     </div>
 
-                    {mentors.map((mentor, index) => (
-                        <div
-                        key={index}
-                        className="grid grid-cols-3 items-center py-4 border-t border-gray-200"
-                        >
-                        <div className="flex items-center justify-center space-x-4">
-                            <img
-                            src={mentor.mentor?.avatar_url}
-                            alt="Instructor"
-                            className="h-10 w-10 rounded-full"
-                            />
-                            <div>
-                            <p className="text-black font-medium">{mentor.mentor?.username}</p>
-                            <p className="text-gray-500 text-sm">
-                                {new Date(mentor.last_session_date).toLocaleDateString("en-US", {
-                                month: "long",
-                                day: "numeric",
-                                year: "numeric",
-                                })}
-                            </p>
+                    {swaps.map((mentor, index) => {
+                        const isCurrentUserReceiver = mentor.user.id === userData.id;
+                        const displayedSkill = isCurrentUserReceiver
+                            ? mentor.user_skill?.name
+                            : mentor.mentor_skill?.name;
+                        
+                        const displayedPartner = isCurrentUserReceiver ? mentor.mentor : mentor.user;
+
+                        return (
+                            <div
+                                key={index}
+                                className="grid grid-cols-3 items-center py-4 border-t border-gray-200"
+                            >
+                                {/* Partner and Date */}
+                                <div className="flex items-center justify-center space-x-4">
+                                    <img
+                                        src={displayedPartner?.avatar_url}
+                                        alt="Partner"
+                                        className="h-10 w-10 rounded-full"
+                                    />
+                                    <div>
+                                        <p className="text-black font-medium">
+                                            {displayedPartner?.username}
+                                        </p>
+                                        <p className="text-gray-500 text-sm">
+                                            {new Date(mentor.last_session_date).toLocaleDateString("en-US", {
+                                                month: "long",
+                                                day: "numeric",
+                                                year: "numeric",
+                                            })}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Skill being received */}
+                                <div className="text-center">
+                                    <p className="text-black">{displayedSkill}</p>
+                                </div>
+
+                                {/* Action */}
+                                <div className="text-center">
+                                    <button className="bg-red-100 text-red-700 px-4 py-1.5 rounded-full text-xs">
+                                        Show Details
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-
-                        <div className="text-center">
-                            <p className="text-black">{mentor.skill?.name}</p>
-                        </div>
-
-                        <div className="text-center">
-                            <button className="bg-red-100 text-red-700 px-4 py-1.5 rounded-full text-xs">
-                            Show Details
-                            </button>
-                        </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                     </div>
                 </div>
             )}
 
+            {showAllSwaps && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35">
+                    <div className="bg-white w-full max-w-4xl p-6 rounded shadow-lg max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-semibold">All Swaps</h2>
+                            <button onClick={() => setShowAllSwaps(false)} className="text-gray-600 hover:text-gray-900 text-xl font-bold">
+                            &times;
+                            </button>
+                        </div>
 
+                        <div className="flex gap-3">
+                            {swaps.map((swap, idx) => {
+                                const isUser = swap.user.id === userData.id;
+                                const otherUser = isUser ? swap.mentor : swap.user;
+                                const offeredSkill = isUser ? swap.user_skill?.name : swap.mentor_skill?.name;
+                                const requestedSkill = isUser ? swap.mentor_skill?.name : swap.user_skill?.name;
+                                const avatar_url = otherUser.avatar_url;
+
+                                const nextSchedule = schedules
+                                    ?.filter(
+                                        (s) => new Date(s.date_time).getTime() > new Date().getTime()
+                                    )
+                                    ?.sort((a, b) => new Date(a.date_time) - new Date(b.date_time))[0];
+
+                                return (
+                                    <div key={idx} className="w-54 bg-white rounded-xl p-4 border border-[#FF7A59]">
+                                        <div className="flex gap-2">
+                                            <img src={avatar_url} className="w-10 h-10 rounded-full" />
+                                            <div>
+                                                <p className="text-base font-semibold">{otherUser?.username}</p>
+                                                <p className="break-words max-w-30 text-xs text-gray-500">@{otherUser?.email}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-2 text-sm space-y-2">
+                                            <p><strong>Skill offered:</strong><br />{offeredSkill}</p>
+                                            <p><strong>Skill requested:</strong><br />{requestedSkill}</p>
+                                            <p><strong>Next session:</strong><br />
+                                            {nextSchedule
+                                                ? new Date(nextSchedule.date_time).toLocaleString("en-US", {
+                                                    month: "long",
+                                                    day: "numeric",
+                                                    year: "numeric",
+                                                    hour: "2-digit",
+                                                    minute: "2-digit",
+                                                    })
+                                                : "No upcoming session"}
+                                            </p>
+                                        </div>
+
+                                        <div className="flex flex-col mt-4 gap-1">
+                                            <button className="flex text-sm items-center bg-[#FF7A59] text-white px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
+                                                <Eye className="w-4 h-4 mr-2" />
+                                                View details
+                                            </button>
+                                            <button className="flex text-sm items-center text-white bg-[#FF7A59] px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
+                                                <MessageCircle className="w-4 h-4 mr-2" />
+                                                Message
+                                            </button>
+                                            <button className="flex text-sm items-center text-white bg-[#FF7A59] px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
+                                                <SquareX className="w-4 h-4 mr-2" />
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
+            {showAllCompletedSwaps && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35">
+                    <div className="bg-white w-full max-w-4xl p-6 rounded shadow-lg max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-semibold">All Swaps</h2>
+                            <button onClick={() => setShowAllCompletedSwaps(false)} className="text-gray-600 hover:text-gray-900 text-xl font-bold">
+                            &times;
+                            </button>
+                        </div>
+
+                        <div className="flex gap-3">
+                            {swaps?.filter(swap => swap.completed).length === 0 ? (
+                                <div className="text-center text-gray-500 mt-4">No completed swaps yet.</div>
+                            ) : (
+                                swaps
+                                    ?.filter(swap => swap.completed)
+                                    .map((swap, idx) => {
+                                        const isCurrentUserMentor = swap.user.id === userData.id;
+                                        const mentor = isCurrentUserMentor ? swap.mentor.username : swap.user.username;
+
+                                        const leftSkill = isCurrentUserMentor ? swap.mentor_skill?.name : swap.user_skill?.name;
+                                        const rightSkill = isCurrentUserMentor ? swap.user_skill?.name : swap.mentor_skill?.name;
+                                        const avatar_url = isCurrentUserMentor ? swap.mentor.avatar_url : swap.user.avatar_url;
+                                        const swapDate = new Date(swap.date_completed).toLocaleDateString("en-US", {
+                                            year: "numeric",
+                                            month: "long",
+                                            day: "numeric",
+                                        });
+
+                                        return (
+                                            <div key={idx} className="rounded-xl w-full px-4 py-5 flex flex-col items-center justify-between text-sm bg-white border border-[#FF7A59]">
+                                                <div className="flex items-center w-full gap-4 justify-between">
+                                                    <img src={avatar_url} className="h-10 w-10 rounded-full" />
+                                                    <div className="flex flex-col">
+                                                        <p className="font-bold">{mentor}</p>
+                                                        <p className="text-xs">@{swap.mentor?.email}</p>
+                                                    </div>
+                                                    <div className="flex flex-col items-center font-bold flex-grow">
+                                                        <p>{leftSkill}</p>
+                                                        <ArrowDownUp />
+                                                        <p>{rightSkill}</p>
+                                                    </div>
+                                                    
+                                                    <p className="flex flex-grow justify-end">{swapDate}</p>
+                                                </div>
+                                                <div className="flex w-full items-center justify-between mt-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <button className="text-sm border border-red-300 px-3 py-1 rounded-full bg-white">
+                                                            <span className="text-yellow-600 mr-2">★ ★ ★ ★ ☆</span>
+                                                            Review
+                                                        </button>
+                                                    </div>
+                                                    <button className="text-xs bg-[#FF7A59] hover:bg-orange-600 rounded-full px-3 font-semibold cursor-pointer text-white h-8">
+                                                        View Summary
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
