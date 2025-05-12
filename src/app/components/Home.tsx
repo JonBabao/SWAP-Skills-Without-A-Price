@@ -15,6 +15,7 @@ import homeJoinButton from '../../../public/images/homeJoinButton.png'
 import EditIcon from '../../../public/images/editIcon.png'
 import SkillsPlaceholder from '../../../public/images/skillsPlaceholder.jpg'
 import CalendarScheduler from './CalendarScheduler'
+import { MessageCircle, Eye, SquareX, Check, X } from 'lucide-react';
 
 const Home: React.FC = () => {
     const supabase = createClient();
@@ -23,6 +24,10 @@ const Home: React.FC = () => {
     const [sessions, setSessions] = useState<any[]>([]);
     const [progress, setProgress] = useState<any[]>([]); 
     const [mentors, setMentors] = useState<any[]>([]);
+
+    const sessionss = Array(3).fill(0); 
+    const pending = Array(3).fill(0);  
+    const completed = Array(2).fill(0); 
 
     const [activeTab, setActiveTab] = useState<'overview' | 'exchange' | 'portfolio' | 'reviews'>('overview');
 
@@ -440,11 +445,108 @@ const Home: React.FC = () => {
                     )}
 
                     {activeTab === 'exchange' && (
-                    <div>
-              
-                        <h2 className="text-xl font-bold mb-4">Skill Exchange</h2>
-       
-                    </div>
+                        <div className="flex text-black">
+                            <div className="flex flex-col px-4">
+                                {/* Active Sessions */}
+                                <div>
+                                    <div className="flex justify-between items-center">
+                                        <h2 className=" text-lg font-semibold mb-2"><span className="text-blue-700 text-2xl">•</span> Active Sessions</h2>
+                                        <a href="#" className="text-gray-500 text-sm hover:underline">See all</a>
+                                    </div>
+                                    <div className="flex gap-4 flex-wrap">
+                                    {sessionss.map((_, idx) => (
+                                        <div key={idx} className="w-54 bg-white rounded-xl p-4 border border-[#FF7A59]">
+                                            <p className="text-lg font-semibold">Eloise Martin</p>
+                                            <p className="text-sm text-gray-500">@eloisemartin</p>
+                                            <div className="mt-2 text-sm space-y-2">
+                                                <p><strong>Skill offered:</strong><br />Photo Editing</p>
+                                                <p><strong>Skill requested:</strong><br />French Language</p>
+                                                <p><strong>Next session:</strong><br />May 3, 2025 – 3:00 PM</p>
+                                            </div>
+                                            <div className="flex flex-col mt-4 gap-1">
+                                                <button className="flex text-sm items-center bg-[#FF7A59] text-white px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
+                                                    <Eye className="w-4 h-4 mr-2" />
+                                                    View details
+                                                </button>
+                                                <button className="flex text-sm items-center text-white bg-[#FF7A59] px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
+                                                    <MessageCircle className="w-4 h-4 mr-2" />
+                                                    Message
+                                                </button>
+                                                <button className="flex text-sm items-center text-white bg-[#FF7A59] px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
+                                                    <SquareX className="w-4 h-4 mr-2" />
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                            
+                                        </div>
+                                    ))}
+                                    </div>
+                                </div>
+
+                                {/* Completed Swaps */}
+                                <div className="mt-10">
+                                    <div className="flex justify-between items-center">
+                                        <h2 className="text-lg font-semibold mb-2"><span className="text-green-700 text-2xl">•</span> Completed Swaps</h2>
+                                        <a href="#" className="text-gray-500 text-sm hover:underline">See all</a>
+                                    </div>
+                                    <div className="space-y-4">
+                                    {completed.map((_, idx) => (
+                                        <div key={idx} className="rounded-xl px-4 py-5 flex flex-col items-center justify-between text-sm bg-white border border-[#FF7A59]">
+                                            <div className="flex items-center w-full gap-4 justify-between">
+                                                <div className="flex flex-col">
+                                                    <p className="font-bold">Eloise Martin</p>
+                                                    <p>@eloisemartin</p>
+                                                </div>
+                                                <p className="font-bold">Graphic Design ↔ Video Editing Basics</p>
+                                                <p>April 10, 2025</p>
+                                            </div>
+                                            <div className="flex w-full items-center justify-between mt-2">
+                                                <div className="flex items-center gap-2">
+                                                    <button className="text-sm border border-red-300 px-3 py-1 rounded-full bg-white">
+                                                        <span className="text-yellow-600 mr-2">★ ★ ★ ★ ☆</span>
+                                                        Review
+                                                    </button>
+                                                </div>
+                                                <button className="text-xs bg-[#FF7A59] hover:bg-orange-600 rounded-full px-3 font-semibold cursor-pointer text-white h-8">View Summary</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    </div>
+                                </div>
+                            </div>    
+
+                            {/* Pending Requests */}
+                            <div className="px-6 pb-6">
+                                <div className="flex justify-between items-center">
+                                    <h2 className="text-lg font-semibold mb-2"><span className="text-yellow-600 text-2xl">•</span> Pending Requests</h2>
+                                    <a href="#" className="text-gray-500 text-sm hover:underline">See all</a>
+                                </div>
+                                <div className="flex flex-col flex-wrap gap-4">
+                                {pending.map((_, idx) => (
+                                    <div key={idx} className="w-76 bg-white rounded-xl p-4 border border-[#FF7A59]">
+                                        <div className="text-lg font-semibold">Eloise Martin</div>
+                                        <div className="text-sm text-gray-500">@eloisemartin</div>
+                                        <div className="mt-2 text-sm">
+                                            <p><strong>Skill offered:</strong> Video Editing</p>
+                                            <p><strong>Skill requested:</strong> Resume Writing</p>
+                                            <p><strong>Proposed Date:</strong><br />May 7, 2025 – 6:00 PM</p>
+                                        </div>
+                                        <div className="flex gap-2 mt-4">
+                                            <button className="flex text-sm bg-[#FF7A59] hover:bg-orange-600 px-2 pr-4 py-1 items-center rounded-full text-white">
+                                                <Check className="w-4 h-4 mr-2" />
+                                                Accept
+                                            </button>
+                                            <button className="flex text-sm bg-[#FF7A59] hover:bg-orange-600 px-2 pr-4 py-1 items-center rounded-full text-white">
+                                                <X className="w-4 h-4 mr-2" />
+                                                Decline
+
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                                </div>
+                            </div>
+                        </div>
                     )}
 
                     {activeTab === 'portfolio' && (
