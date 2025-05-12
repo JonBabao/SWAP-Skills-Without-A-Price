@@ -53,7 +53,7 @@ const LessonViewer = () => {
     if (authError || !user) return console.error("User auth failed", authError);
 
     const { data: lessonsData, error } = await supabase
-      .from("lessons")
+      .from("schedules")
       .select(
         `
         id,
@@ -79,7 +79,7 @@ const LessonViewer = () => {
     }
 
     const { data: allLessonsData, error: allLessonsError } = await supabase
-      .from("lessons")
+      .from("schedules")
       .select(
         `
         id,
