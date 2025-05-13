@@ -85,7 +85,7 @@ const Login: React.FC = () => {
     };
     
     return(
-        <div className="flex flex-row">
+        <div className="flex flex-row bg-[#FDFCF9]">
             <img 
                 src={AuthImage.src}
                 alt="Auth Image"
