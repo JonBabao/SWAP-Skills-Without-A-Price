@@ -189,6 +189,25 @@ const Home: React.FC = () => {
 
     };
 
+    const declinePending = async (req: any) => {
+        const { error: updateRequestsError } = await supabase
+            .from('requests')
+            .update({ status: true })
+            .eq('id', req.id)
+
+        if (updateRequestsError) {
+            console.log("update request fail: ", updateRequestsError)
+        }
+
+        setRequests(prev => prev.filter(r =>
+            !(
+                r.user.id === req.user.id &&
+                r.mentor.id === req.mentor.id &&
+                r.date_time === req.date_time
+            )
+        ));
+    }
+
 
     const editProfile = async () => {
         alert("Move to edit profile.")
@@ -716,7 +735,7 @@ const Home: React.FC = () => {
                                                     <Check className="w-4 h-4 mr-2" />
                                                     Accept
                                                 </button>
-                                                <button className="flex text-sm bg-[#FF7A59] hover:bg-orange-600 px-2 pr-4 py-1 items-center rounded-full text-white">
+                                                <button onClick={() => declinePending(req)} className="flex text-sm bg-[#FF7A59] hover:bg-orange-600 px-2 pr-4 py-1 items-center rounded-full text-white">
                                                     <X className="w-4 h-4 mr-2" />
                                                     Decline
                                                 </button>
