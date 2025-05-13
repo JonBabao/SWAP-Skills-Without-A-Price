@@ -25,10 +25,7 @@ const Home: React.FC = () => {
     const [progress, setProgress] = useState<any[]>([]); 
     const [swaps, setSwaps] = useState<any[]>([]);
     const [schedules, setSchedules] = useState<any[]>([]);
-
-    const sessionss = Array(3).fill(0); 
-    const pending = Array(3).fill(0);  
-    const completed = Array(2).fill(0); 
+    const [requests, setRequests] = useState<any[]>([]);
 
     const [activeTab, setActiveTab] = useState<'overview' | 'exchange' | 'portfolio' | 'reviews'>('overview');
 
@@ -50,6 +47,10 @@ const Home: React.FC = () => {
     const [showAllCompletedSwaps, setShowAllCompletedSwaps] = useState(false);
 
     const openAllCompletedSwaps = () => setShowAllCompletedSwaps(true);
+
+    const [showAllRequests, setShowAllRequests] = useState(false);
+
+    const openAllRequests = () => setShowAllRequests(true);
 
 
 
@@ -106,8 +107,6 @@ const Home: React.FC = () => {
                     .order('date', { ascending: false }); 
                     
                     
-                    console.log(sessionData)
-                    
                 const { data: progressData, error: progressError } = await supabase
                     .from('progress')
                     .select(`
@@ -121,6 +120,23 @@ const Home: React.FC = () => {
                     .select('user_id, mentor_id, date_time')
                     .or(`user_id.eq.${authId},mentor_id.eq.${authId}`)
                     .order('date_time', { ascending: false }); 
+
+                const { data: requestData } = await supabase
+                    .from('requests')
+                    .select(`
+                        id,
+                        user_id,
+                        mentor_id,
+                        user:user_id ( id, username, avatar_url ),
+                        mentor:mentor_id ( id, username, avatar_url ),
+                        user_skill ( name ),
+                        mentor_skill ( name ),
+                        date_time, 
+                        message, 
+                        status,
+                        mode
+                    `)
+                    .eq('mentor_id', authId)
             
                 setUserData(user);
                 setSkillsOffered(skills);
@@ -128,12 +144,51 @@ const Home: React.FC = () => {
                 setProgress(progressData);
                 setSwaps(swapData);
                 setSchedules(scheduleData);
+                setRequests(requestData);
                 
             }
         };
 
         fetchUserData();
     }, []);
+
+    const acceptPending = async (req: any) => {
+        const titleName = `${req.user_skill?.name} and ${req.mentor_skill?.name}`;
+        const { error: acceptError } = await supabase
+            .from('schedules')
+            .insert({
+                title: titleName,
+                user_id: req.user.id,
+                mentor_id: req.mentor.id,
+                date_time: req.date_time,
+                mode: req.mode
+            });
+
+        if (acceptError) {
+            console.error("Insert failed:", acceptError);
+        } else {
+            console.log("Schedule inserted successfully");
+        }
+
+        const { error: updateRequestsError } = await supabase
+            .from('requests')
+            .update({ status: true })
+            .eq('id', req.id)
+
+        if (updateRequestsError) {
+            console.log("update request fail: ", updateRequestsError)
+        }
+
+        setRequests(prev => prev.filter(r =>
+            !(
+                r.user.id === req.user.id &&
+                r.mentor.id === req.mentor.id &&
+                r.date_time === req.date_time
+            )
+        ));
+
+    };
+
 
     const editProfile = async () => {
         alert("Move to edit profile.")
@@ -623,31 +678,54 @@ const Home: React.FC = () => {
                             <div className="px-6 pb-6">
                                 <div className="flex justify-between items-center">
                                     <h2 className="text-lg font-semibold mb-2"><span className="text-yellow-600 text-2xl">•</span> Pending Requests</h2>
-                                    <a href="#" className="text-gray-500 text-sm hover:underline">See all</a>
+                                    <a onClick={openAllRequests} className="text-gray-500 text-sm hover:underline">See all</a>
                                 </div>
                                 <div className="flex flex-col flex-wrap gap-4">
-                                {pending.map((_, idx) => (
-                                    <div key={idx} className="w-76 bg-white rounded-xl p-4 border border-[#FF7A59]">
-                                        <div className="text-lg font-semibold">Eloise Martin</div>
-                                        <div className="text-sm text-gray-500">@eloisemartin</div>
-                                        <div className="mt-2 text-sm">
-                                            <p><strong>Skill offered:</strong> Video Editing</p>
-                                            <p><strong>Skill requested:</strong> Resume Writing</p>
-                                            <p><strong>Proposed Date:</strong><br />May 7, 2025 – 6:00 PM</p>
+                                {requests?.filter(req => !req.status).slice(0, 3).length === 0 ? (
+                                    <p className="text-gray-500 text-sm">No pending requests yet</p>
+                                    ) : (
+                                    requests
+                                        .filter(req => !req.status)
+                                        .slice(0, 3)
+                                        .map((req, idx) => (
+                                        <div key={idx} className="w-76 bg-white rounded-xl p-4 border border-[#FF7A59]">
+                                            <div className="flex gap-2 items-center">
+                                                <img src={req.user.avatar_url} className="w-8 h-8 rounded-full" />
+                                                <div>
+                                                    <div className="text-sm font-semibold">{req.user?.username}</div>
+                                                    <div className="text-xs text-gray-500 break-words">@{req.user?.username}</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="mt-2 text-sm space-y-2">
+                                                <p><strong>Skill offered:</strong> {req.mentor_skill?.name}</p>
+                                                <p><strong>Skill requested:</strong> {req.user_skill?.name}</p>
+                                                <p><strong>Proposed Date:</strong><br />
+                                                    {new Date(req.date_time).toLocaleString("en-US", {
+                                                    month: "long",
+                                                    day: "numeric",
+                                                    year: "numeric",
+                                                    hour: "numeric",
+                                                    minute: "numeric",
+                                                    hour12: true,
+                                                    })}
+                                                </p>
+                                            </div>
+                                            <div className="flex gap-2 mt-4">
+                                                <button onClick={() => acceptPending(req)} className="flex text-sm bg-[#FF7A59] hover:bg-orange-600 px-2 pr-4 py-1 items-center rounded-full text-white">
+                                                    <Check className="w-4 h-4 mr-2" />
+                                                    Accept
+                                                </button>
+                                                <button className="flex text-sm bg-[#FF7A59] hover:bg-orange-600 px-2 pr-4 py-1 items-center rounded-full text-white">
+                                                    <X className="w-4 h-4 mr-2" />
+                                                    Decline
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="flex gap-2 mt-4">
-                                            <button className="flex text-sm bg-[#FF7A59] hover:bg-orange-600 px-2 pr-4 py-1 items-center rounded-full text-white">
-                                                <Check className="w-4 h-4 mr-2" />
-                                                Accept
-                                            </button>
-                                            <button className="flex text-sm bg-[#FF7A59] hover:bg-orange-600 px-2 pr-4 py-1 items-center rounded-full text-white">
-                                                <X className="w-4 h-4 mr-2" />
-                                                Decline
+                                        ))
+                                    )}
 
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
+
                                 </div>
                             </div>
                         </div>
@@ -923,6 +1001,64 @@ const Home: React.FC = () => {
                                         );
                                     })
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+            {showAllRequests && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35">
+                    <div className="bg-white w-full max-w-4xl p-6 rounded shadow-lg max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-semibold">All Pending Requests</h2>
+                            <button onClick={() => setShowAllRequests(false)} className="text-gray-600 hover:text-gray-900 text-xl font-bold">
+                            &times;
+                            </button>
+                        </div>
+
+                        <div className="flex gap-3">
+                            {requests?.filter(req => !req.status).slice(0, 3).length === 0 ? (
+                                    <p className="text-gray-500 text-sm">No pending requests yet</p>
+                                    ) : (
+                                    requests
+                                        .filter(req => !req.status)
+                                        .slice(0, 3)
+                                        .map((req, idx) => (
+                                        <div key={idx} className="w-76 bg-white rounded-xl p-4 border border-[#FF7A59]">
+                                            <div className="flex gap-2 items-center">
+                                                <img src={req.user.avatar_url} className="w-8 h-8 rounded-full" />
+                                                <div>
+                                                    <div className="text-sm font-semibold">{req.user?.username}</div>
+                                                    <div className="text-xs text-gray-500 break-words">@{req.user?.username}</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="mt-2 text-sm space-y-2">
+                                                <p><strong>Skill offered:</strong> {req.mentor_skill?.name}</p>
+                                                <p><strong>Skill requested:</strong> {req.user_skill?.name}</p>
+                                                <p><strong>Proposed Date:</strong><br />
+                                                    {new Date(req.date_time).toLocaleString("en-US", {
+                                                    month: "long",
+                                                    day: "numeric",
+                                                    year: "numeric",
+                                                    hour: "numeric",
+                                                    minute: "numeric",
+                                                    hour12: true,
+                                                    })}
+                                                </p>
+                                            </div>
+                                            <div className="flex gap-2 mt-4">
+                                                <button onClick={() => acceptPending(req)} className="flex text-sm bg-[#FF7A59] hover:bg-orange-600 px-2 pr-4 py-1 items-center rounded-full text-white">
+                                                    <Check className="w-4 h-4 mr-2" />
+                                                    Accept
+                                                </button>
+                                                <button className="flex text-sm bg-[#FF7A59] hover:bg-orange-600 px-2 pr-4 py-1 items-center rounded-full text-white">
+                                                    <X className="w-4 h-4 mr-2" />
+                                                    Decline
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                         </div>
                     </div>
                 </div>
