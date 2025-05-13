@@ -695,7 +695,7 @@ const Home: React.FC = () => {
 
                             {/* Pending Requests */}
                             <div className="px-6 pb-6">
-                                <div className="flex justify-between items-center">
+                                <div className="flex w-76 justify-between items-center">
                                     <h2 className="text-lg font-semibold mb-2"><span className="text-yellow-600 text-2xl">•</span> Pending Requests</h2>
                                     <a onClick={openAllRequests} className="text-gray-500 text-sm hover:underline">See all</a>
                                 </div>
