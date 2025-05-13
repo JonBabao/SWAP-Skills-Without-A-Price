@@ -91,46 +91,45 @@ For more info, read the [Next.js deployment documentation](https://nextjs.org/do
 
 ---
 
-## 👏 Acknowledgments
+## 👏 Acknowledgement and Contribution Narrative
 
-The development of **SWAP: Skills Without A Price**, a skill-sharing web application, was made possible through the collaborative effort of a passionate and talented team. Each member brought unique strengths to the table, contributing significantly to the platform's success.
+### Acknowledgments
 
-### 💻 Jon Endrick M. Babao — Full Stack Developer / Project Lead  
-[GitHub Profile](https://github.com/JonBabao)  
+The development of **SWAP: Skills Without A Price**, a skill-sharing web application, was made possible through the collaborative efforts of a passionate and talented team. Each member brought unique strengths to the project, contributing significantly to its overall success. The following acknowledgments highlight the roles and key contributions of each team member:
+
+#### [ENDRICK](https://github.com/JonBabao): Full Stack Developer / Project Lead
 - Led the planning, integration, and implementation of both frontend and backend systems.  
 - Managed the application’s architecture, routing, and deployment setup using Next.js.  
-- Oversaw the GitHub repository, structured development sprints, and maintained code consistency across the project.  
-- Ensured timely delivery of milestones and overall technical direction of the app.
+- Oversaw the GitHub repository, organized development sprints, and maintained code consistency.  
+- Ensured timely delivery of milestones and guided the project’s technical direction.  
 
-### 🎨 Reina Liz B. Armedilla — UI/UX Designer Lead  
-[GitHub Profile](https://github.com/reinarmedilla)  
-- Led the overall user interface and user experience design.  
-- Designed the application layout, color schemes, wireframes, and component mockups.  
+#### [REINA](https://github.com/reinarmedilla): UI/UX Designer Lead 
+- Led the user interface and user experience design efforts.  
+- Designed the app’s layout, color schemes, wireframes, and component mockups.  
 - Ensured that usability and accessibility standards were met in all visual components.  
-- Contributed ideas that enhanced the intuitiveness and appeal of the platform.
+- Contributed innovative ideas that enhanced the app's intuitiveness and visual appeal.  
 
-### 🧩 Faith Allyson R. Mendoza — UI Designer  
-[GitHub Profile](https://github.com/FaithAllyson)  
-- Assisted in the creation of user interface elements and visual assets.  
+#### [FAITH](https://github.com/FaithAllyson): UI Designer/Developer 
+- Assisted in the creation of user interface elements and visual design assets.  
 - Participated in brainstorming sessions and iterative design improvements.  
-- Helped ensure the consistency of design components across pages.
+- Helped maintain the consistency of design components across all app pages.  
 
-### 🌐 Chustine Mae B. Cantal — Frontend Developer  
-[GitHub Profile](https://github.com/chustinecantal)  
-- Implemented reusable React components and ensured responsiveness across screen sizes.  
+#### [CHUSTINE](https://github.com/chustinecantal): Frontend Developer  
+- Implemented reusable React components with responsive design.  
 - Integrated frontend logic with backend APIs.  
-- Helped improve UI interactivity and user flow across features like registration, profile browsing, and session scheduling.
+- Enhanced UI interactivity and improved user flow across features such as registration, profile browsing, and session scheduling.  
 
 ---
 
 ### 🔍 Special Thanks to All Members
 
-- 🧪 For participating in **thorough testing** to ensure the app’s core features worked reliably.
-- 📝 For working on **project documentation**, from initial planning and wireframes to final technical write-ups.
-- 🤝 For embracing a spirit of collaboration, feedback, and continuous improvement throughout the project timeline.
+- 🧪 For conducting **thorough testing** to ensure the reliability of the app’s core features.  
+- 📝 For contributing to **project documentation**, including planning materials and technical write-ups.  
+- 🤝 For fostering a **collaborative environment** with open communication, feedback, and continuous improvement.  
 
 ---
 
-In summary, **SWAP** stands as a testament to what a dedicated team of students can achieve with shared vision, technical synergy, and creativity. This project showcases each member’s contribution to building a meaningful, free-to-access skill-sharing platform for all.
+**In summary**, the successful development of SWAP reflects the dedication and synergy of a student-led team committed to building a meaningful, accessible platform for skill-sharing. Each contribution helped transform a shared vision into a functional and engaging web application.
 
-[🔝 Return to Top](#swap-skills-without-a-price)
+[Return to Top](#swap-skills-without-a-price)
+
