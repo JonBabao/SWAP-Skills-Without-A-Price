@@ -58,7 +58,7 @@ const Chat: React.FC = () => {
     useEffect(() => {
         if (!user) return;
         supabase
-        .rpc('get_chat_contacts', { current_user_id: user.id }) // a custom function you write
+        .rpc('get_chat_contacts', { current_user_id: user.id }) 
         .then(({ data }) => setContacts(data));
     }, [user]);
 
@@ -117,7 +117,7 @@ const Chat: React.FC = () => {
                         </button>
                     </div>
                     
-                    <input type="text" placeholder="Search..." className="mb-4 px-3 py-3 bg-white rounded-full w-full" />
+                    <input type="text" placeholder="🔍 Search..." className="mb-4 px-5 py-3 bg-white rounded-full w-full focus:outline-none" />
                     <div className="overflow-y-auto h-127 bg-white rounded-lg">
                         {contacts.map((contact, index) => {
                         const isFirst = index === 0;
@@ -214,7 +214,7 @@ const Chat: React.FC = () => {
                     <input
                         type="text"
                         placeholder="Search users..."
-                        className="w-full px-3 py-2 border rounded mb-4"
+                        className="w-full px-3 py-2 border-2 border-gray-300 rounded focus:outline-none mb-4"
                         value={searchQuery}
                         onChange={async (e) => {
                         const value = e.target.value;
@@ -252,7 +252,7 @@ const Chat: React.FC = () => {
                     </div>
                     <button
                         onClick={() => setShowNewMessageModal(false)}
-                        className="mt-4 text-sm text-gray-500 hover:underline"
+                        className="ml-1 text-sm text-gray-500 hover:underline"
                     >
                         Cancel
                     </button>
