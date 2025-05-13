@@ -29,7 +29,7 @@ const LandingPage: React.FC = () => {
 
 
   return (
-    <div className="flex flex-col items-center justify-center w-full">
+    <div className="flex flex-col items-center justify-center w-full bg-[#FDFCF9]">
       <section className="flex flex-row items-center justify-center">
         <div className="flex flex-col text-left text-lg items-start w-1/2 py-8 pl-24 gap-4 mt-32">
           <p className="montserrat text-6xl font-bold">Unlock Potential, Not Wallets</p>
