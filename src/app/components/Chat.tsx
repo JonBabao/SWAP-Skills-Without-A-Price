@@ -102,8 +102,7 @@ const Chat: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col h-screen">
-            <p className="text-center text-3xl font-bold py-4">Chat</p>
+        <div className="flex flex-col mt-22">
             <div className="flex">
                 {/* Sidebar */}
                 <div className="w-1/3 ml-10">
