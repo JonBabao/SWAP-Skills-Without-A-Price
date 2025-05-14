@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '../../../lib/supabase/client';
 import { ImageIcon } from 'lucide-react';
+import { useParams } from 'next/navigation';
+
 
 interface Skill {
   id: number;
@@ -23,18 +25,17 @@ const UserPortfolio = () => {
   const [user, setUser] = useState<any>(null);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
+  const params = useParams();
+  const userId = params.id as string;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (!authUser) throw new Error('Not authenticated');
-
         // Fetch user data
         const { data: userData } = await supabase
           .from('users')
           .select('*')
-          .eq('id', authUser.id)
+          .eq('id', userId)
           .single();
 
         // Fetch skills with properly formatted image URLs
@@ -45,7 +46,7 @@ const UserPortfolio = () => {
             skills(name),
             images
           `)
-          .eq('user_id', authUser.id);
+          .eq('user_id', userId);
 
         if (skillsData) {
           const formattedSkills = skillsData.map((item: any) => ({
@@ -70,7 +71,7 @@ const UserPortfolio = () => {
   if (loading) return <div>Loading...</div>;
 
   return (
-    <div className="min-h-screen py-12 px-4">
+    <div className="min-h-screen py-12 px-4 mt-14">
       <div className="max-w-4xl mx-auto">
         <div className="flex flex-col items-center mb-12">
           <img
