@@ -18,6 +18,7 @@ import CalendarScheduler from './CalendarScheduler'
 import { MessageCircle, Eye, SquareX, Check, X, ArrowDownUp, ImageIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import UserPortfolio from './UserPortfolio';
+import ProfilePlaceholder from '../../../public/images/profilePlaceholder.jpg'
 
 const Home: React.FC = () => {
     const supabase = createClient();
@@ -242,7 +243,7 @@ const Home: React.FC = () => {
                 <><div className="max-w-md w-128 mt-20 mx-auto bg-white border-[#CBD7DF] border-1 rounded-tr-2xl p-6 text-center">
                     {/* Avatar and Edit */}
                     <div className="relative w-full flex justify-center mb-4">
-                        <img src={userData.avatar_url} className="rounded-full w-30 h-30" />
+                        <img src={userData.avatar_url || ProfilePlaceholder.src} className="rounded-full w-30 h-30" />
                         <button className="absolute bottom-0 right-35 bg-white p-1 rounded-full shadow cursor-pointer" onClick={editProfile}>
                             <img src={EditIcon.src} alt="Edit" className="w-4 h-4" />
                         </button>
@@ -363,7 +364,7 @@ const Home: React.FC = () => {
                         </button>
                         <button
                             className={`${activeTab === 'portfolio' ? 'swapOrangeText font-bold border-b-4 pt-4 pb-3 border-orange-500 -mb-1' : 'mt-1'}`}
-                            onClick={() => setActiveTab('portfolio')}
+                            onClick={() => router.push(`/portfolio/${userData.id}`)}
                         >
                             Portfolio
                         </button>
@@ -513,7 +514,7 @@ const Home: React.FC = () => {
                                                 {/* Partner and Date */}
                                                 <div className="flex items-center justify-center space-x-4">
                                                     <img
-                                                        src={displayedPartner?.avatar_url}
+                                                        src={displayedPartner?.avatar_url || ProfilePlaceholder.src}
                                                         alt="Partner"
                                                         className="h-10 w-10 rounded-full"
                                                     />
@@ -586,7 +587,7 @@ const Home: React.FC = () => {
                                             return (
                                                 <div key={idx} className="w-54 bg-white rounded-xl p-4 border border-[#FF7A59]">
                                                     <div className="flex gap-2">
-                                                        <img src={avatar_url} className="w-10 h-10 rounded-full" />
+                                                        <img src={avatar_url || ProfilePlaceholder.src} className="w-10 h-10 rounded-full" />
                                                         <div>
                                                             <p className="text-base font-semibold">{otherUser?.username}</p>
                                                             <p className="break-words max-w-30 text-xs text-gray-500">@{otherUser?.email}</p>
@@ -661,7 +662,7 @@ const Home: React.FC = () => {
                                                 return (
                                                     <div key={idx} className="rounded-xl px-4 py-5 flex flex-col items-center justify-between text-sm bg-white border border-[#FF7A59]">
                                                         <div className="flex items-center w-full gap-4 justify-between">
-                                                            <img src={avatar_url} className="h-10 w-10 rounded-full" />
+                                                            <img src={avatar_url || ProfilePlaceholder.src} className="h-10 w-10 rounded-full" />
                                                             <div className="flex flex-col">
                                                                 <p className="font-bold">{mentor}</p>
                                                                 <p className="text-xs">@{swap.mentor?.email}</p>
@@ -709,7 +710,7 @@ const Home: React.FC = () => {
                                         .map((req, idx) => (
                                         <div key={idx} className="w-76 bg-white rounded-xl p-4 border border-[#FF7A59]">
                                             <div className="flex gap-2 items-center">
-                                                <img src={req.user.avatar_url} className="w-8 h-8 rounded-full" />
+                                                <img src={req.user.avatar_url || ProfilePlaceholder.src} className="w-8 h-8 rounded-full" />
                                                 <div>
                                                     <div className="text-sm font-semibold">{req.user?.username}</div>
                                                     <div className="text-xs text-gray-500 break-words">@{req.user?.username}</div>
@@ -849,7 +850,7 @@ const Home: React.FC = () => {
                                 {/* Partner and Date */}
                                 <div className="flex items-center justify-center space-x-4">
                                     <img
-                                        src={displayedPartner?.avatar_url}
+                                        src={displayedPartner?.avatar_url || ProfilePlaceholder.src}
                                         alt="Partner"
                                         className="h-10 w-10 rounded-full"
                                     />
@@ -912,7 +913,7 @@ const Home: React.FC = () => {
                                 return (
                                     <div key={idx} className="w-54 bg-white rounded-xl p-4 border border-[#FF7A59]">
                                         <div className="flex gap-2">
-                                            <img src={avatar_url} className="w-10 h-10 rounded-full" />
+                                            <img src={avatar_url || ProfilePlaceholder.src} className="w-10 h-10 rounded-full" />
                                             <div>
                                                 <p className="text-base font-semibold">{otherUser?.username}</p>
                                                 <p className="break-words max-w-30 text-xs text-gray-500">@{otherUser?.email}</p>
@@ -988,7 +989,7 @@ const Home: React.FC = () => {
                                         return (
                                             <div key={idx} className="rounded-xl w-full px-4 py-5 flex flex-col items-center justify-between text-sm bg-white border border-[#FF7A59]">
                                                 <div className="flex items-center w-full gap-4 justify-between">
-                                                    <img src={avatar_url} className="h-10 w-10 rounded-full" />
+                                                    <img src={avatar_url || ProfilePlaceholder.src} className="h-10 w-10 rounded-full" />
                                                     <div className="flex flex-col">
                                                         <p className="font-bold">{mentor}</p>
                                                         <p className="text-xs">@{swap.mentor?.email}</p>
@@ -1040,7 +1041,7 @@ const Home: React.FC = () => {
                                         .map((req, idx) => (
                                         <div key={idx} className="w-76 bg-white rounded-xl p-4 border border-[#FF7A59]">
                                             <div className="flex gap-2 items-center">
-                                                <img src={req.user.avatar_url} className="w-8 h-8 rounded-full" />
+                                                <img src={req.user.avatar_url || ProfilePlaceholder.src} className="w-8 h-8 rounded-full" />
                                                 <div>
                                                     <div className="text-sm font-semibold">{req.user?.username}</div>
                                                     <div className="text-xs text-gray-500 break-words">@{req.user?.username}</div>
