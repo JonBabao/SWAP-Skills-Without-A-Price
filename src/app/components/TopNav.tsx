@@ -52,7 +52,7 @@ const TopNav: React.FC = () => {
                     <Link href='/' className="h-10 w-10 p-2 bg-gray-200 rounded-full" >
                         <Bell />
                     </Link>
-                    <Link href='/dashboard/home'>
+                    <Link href='/dashboard'>
                         <img src={userData.avatar_url} className="h-12 w-12 rounded-full mr-8" />
                     </Link>
                     
