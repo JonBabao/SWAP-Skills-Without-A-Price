@@ -4,6 +4,7 @@ import { Plus, X, Image as ImageIcon } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { createClient } from '../../../lib/supabase/client';
+import ProfilePlaceholder from '../../../public/images/profilePlaceholder.jpg'
 
 interface Skill {
   id: number;
@@ -327,7 +328,7 @@ const EditProfile: React.FC = () => {
                     <div className="flex justify-center">
                         <label className="cursor-pointer">
                             <img 
-                            src={profile?.avatar_url || "https://via.placeholder.com/100"} 
+                            src={profile?.avatar_url || ProfilePlaceholder.src} 
                             className="rounded-full w-24 h-24 ml-8" 
                             alt="Profile" 
                             />

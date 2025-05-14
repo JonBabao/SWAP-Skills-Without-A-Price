@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { createClient } from '../../../lib/supabase/client'
 import { Paperclip, SendHorizontal, SquarePen } from 'lucide-react';
 import { timeAgo } from '../../../lib/utils/timeAgo';
+import ProfilePlaceholder from '../../../public/images/profilePlaceholder.jpg'
 
 
 interface User {
@@ -132,7 +133,7 @@ const Chat: React.FC = () => {
                                     ${isFirst ? 'rounded-t-lg' : ''} 
                                     ${isLast ? 'rounded-b-lg' : ''}`}
                             >
-                                <img src={contact.avatar_url} className="w-10 h-10 rounded-full" />
+                                <img src={contact.avatar_url || ProfilePlaceholder.src} className="w-10 h-10 rounded-full" />
                                 <div>
                                     <p className={`font-semibold ${isSelected ? 'text-[#FBF8F2]' : '' }`}>{contact.username}</p>
                                     <p className={`text-xs ${isSelected ? 'text-[#FBF8F2]' : '' }`}>Tap to open chat</p>
@@ -149,7 +150,7 @@ const Chat: React.FC = () => {
                     {selected ? (
                     <>
                         <div className="flex items-center gap-3 rounded-xl p-6 bg-white">
-                            <img src={selected.avatar_url} className="w-10 h-10 rounded-full" />
+                            <img src={selected.avatar_url || ProfilePlaceholder.src} className="w-10 h-10 rounded-full" />
                             <div>
                                 <p className="font-bold">{selected.username}</p>
                                 <p className="text-sm text-gray-500">Chatting now</p>
@@ -162,7 +163,7 @@ const Chat: React.FC = () => {
                                 return (
                                     <div key={msg.id} className={`flex gap-3 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
                                         {!isCurrentUser && (
-                                            <img src={selected?.avatar_url} alt="Avatar" className="w-10 h-10 rounded-full" />
+                                            <img src={selected?.avatar_url || ProfilePlaceholder.src} alt="Avatar" className="w-10 h-10 rounded-full" />
                                         )}
 
                                         <div className={`max-w-md ${isCurrentUser ? 'ml-auto text-right' : ''}`}>
@@ -241,7 +242,7 @@ const Chat: React.FC = () => {
                             setSearchResults([]);
                             }}
                         >
-                            <img src={userResult.avatar_url} className="w-8 h-8 rounded-full" />
+                            <img src={userResult.avatar_url || ProfilePlaceholder.src} className="w-8 h-8 rounded-full" />
                             <span>{userResult.username}</span>
                         </div>
                         ))}
