@@ -67,7 +67,7 @@ const Login: React.FC = () => {
             }
         }
 
-        router.push("/");
+        router.push("/dashboard");
     };
 
     const handleForgotPassword = async () => {
