@@ -328,7 +328,7 @@ const EditProfile: React.FC = () => {
                         <label className="cursor-pointer">
                             <img 
                             src={profile?.avatar_url || "https://via.placeholder.com/100"} 
-                            className="rounded-full w-24 h-24" 
+                            className="rounded-full w-24 h-24 ml-8" 
                             alt="Profile" 
                             />
                             <p className="text-sm text-center mt-1">Click to upload new photo</p>

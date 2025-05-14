@@ -16,6 +16,7 @@ import EditIcon from '../../../public/images/editIcon.png'
 import SkillsPlaceholder from '../../../public/images/skillsPlaceholder.jpg'
 import CalendarScheduler from './CalendarScheduler'
 import { MessageCircle, Eye, SquareX, Check, X, ArrowDownUp } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 const Home: React.FC = () => {
     const supabase = createClient();
@@ -26,6 +27,8 @@ const Home: React.FC = () => {
     const [swaps, setSwaps] = useState<any[]>([]);
     const [schedules, setSchedules] = useState<any[]>([]);
     const [requests, setRequests] = useState<any[]>([]);
+
+    const router = useRouter();
 
     const [activeTab, setActiveTab] = useState<'overview' | 'exchange' | 'portfolio' | 'reviews'>('overview');
 
@@ -207,7 +210,7 @@ const Home: React.FC = () => {
 
 
     const editProfile = async () => {
-        alert("Move to edit profile.")
+        router.push("/dashboard/editProfile")
     }
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
