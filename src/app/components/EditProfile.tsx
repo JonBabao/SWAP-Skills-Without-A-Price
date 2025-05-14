@@ -1,182 +1,568 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import logo from '../../../public/images/logo.png';
-import searchIcon from '../../../public/images/search icon.png';
-import ProfileIcon from '../../../public/images/man 1.png';
-import Notifcation from '../../../public/images/notification.png';
-import MessageIcon from '../../../public/images/message.png';
-import UploadButton from '../../../public/images/upload.png';
-import AddButton from '../../../public/images/add btn.png';
-import SaveButton from '../../../public/images/save btn.png';
-import EditProfileButton from '../../../public/images/edit photo.png';
+import { Plus, X, Image as ImageIcon } from 'lucide-react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { createClient } from '../../../lib/supabase/client';
+
+interface Skill {
+  id: number;
+  name: string;
+  images: File[];
+  previews: string[];
+}
+
+const supabase = createClient();
 
 const EditProfile: React.FC = () => {
+    const [profile, setProfile] = useState<any>(null);
+    const [birthDate, setBirthDate] = useState<Date | null>(new Date());
+    const [skills, setSkills] = useState<Skill[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    // Fetch user profile and skills on component mount
+    useEffect(() => {
+        const fetchProfile = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Fetch user profile
+        const { data: profileData } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+        if (profileData) {
+            setProfile(profileData);
+            setBirthDate(profileData.birth_date ? new Date(profileData.birth_date) : null);
+        
+            // Fetch user's offered skills with images
+        const { data: skillsData } = await supabase
+            .from('user_skills_offered')
+            .select('skill_id, skills(name), images')
+            .eq('user_id', user.id);
+
+        if (skillsData) {
+            const formattedSkills = skillsData.map((item: any, index: number) => ({
+                id: index + 1,
+                name: item.skills.name,
+                images: [],
+                previews: item.images || []
+            }));
+            setSkills(formattedSkills.length ? formattedSkills : [{ id: 1, name: '', images: [], previews: [] }]);
+            }
+        }
+        setLoading(false);
+    };
+        fetchProfile();
+    }, []);
+
+    const addSkillRow = () => {
+        setSkills([...skills, { id: skills.length + 1, name: '', images: [], previews: [] }]);
+    };
+
+    const removeSkillRow = (id: number) => {
+        if (skills.length > 1) {
+            setSkills(skills.filter(skill => skill.id !== id));
+        }
+    };
+
+    const handleSkillChange = (id: number, value: string) => {
+        setSkills(skills.map(skill => 
+        skill.id === id ? { ...skill, name: value } : skill
+        ));
+    };
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, skillId: number) => {
+        if (e.target.files) {
+            const files = Array.from(e.target.files);
+            const newPreviews = files.map(file => URL.createObjectURL(file));
+      
+            setSkills(skills.map(skill => {
+                if (skill.id === skillId) {
+                    return {
+                    ...skill,
+                    images: [...skill.images, ...files],
+                    previews: [...skill.previews, ...newPreviews]
+                    };
+                }
+                return skill;
+            }));
+        }
+    };
+
+    const removeImage = (skillId: number, imageIndex: number) => {
+        setSkills(skills.map(skill => {
+        if (skill.id === skillId) {
+            const newImages = [...skill.images];
+            const newPreviews = [...skill.previews];
+            newImages.splice(imageIndex, 1);
+            newPreviews.splice(imageIndex, 1);
+            return { ...skill, images: newImages, previews: newPreviews };
+        }
+        return skill;
+        }));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSaving(true);
+
+    try {
+        console.log('[1] Starting profile update process...');
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) {
+            console.error('[1.1] Auth error:', userError);
+            throw new Error('Authentication error');
+        }
+        
+        if (!user) {
+            console.error('[1.2] No authenticated user');
+            throw new Error('User not authenticated');
+        }
+
+        console.log('[2] Authenticated user:', user.id);
+
+        // Upload new skill images to storage and get URLs
+        console.log('[3] Processing skills with images...');
+        const updatedSkills = await Promise.all(
+            skills.map(async (skill, index) => {
+                console.log(`[3.${index + 1}] Processing skill: ${skill.name || 'unnamed'}`);
+                
+                if (skill.images.length > 0) {
+                    console.log(`[3.${index + 1}.1] Found ${skill.images.length} images to upload`);
+                    
+                const uploadedUrls = await Promise.all(
+                    skill.images.map(async (file, fileIndex) => {
+                        const fileName = `${user.id}-${Date.now()}-${fileIndex}-${file.name.replace(/\s+/g, '-')}`;
+                    
+                        try {
+                            // First check if user is authenticated
+                            const { data: { session } } = await supabase.auth.getSession();
+                            if (!session) throw new Error('No active session');
+                            
+                            // Upload with proper error handling
+                            const { data, error } = await supabase.storage
+                                .from('images')
+                                .upload(`skill-pictures/${fileName}`, file, {
+                                upsert: false,
+                                contentType: file.type
+                                });
+
+                            if (error) throw error;
+                            
+                            // Get public URL
+                            const { data: { publicUrl } } = supabase.storage
+                                .from('images')
+                                .getPublicUrl(`skill-pictures/${fileName}`);
+                            
+                            return publicUrl;
+                        } catch (uploadError) {
+                            console.error(`Failed to upload ${fileName}:`, uploadError);
+                            throw uploadError;
+                        }
+                    })
+                );
+                return { ...skill, previews: [...skill.previews, ...uploadedUrls] };
+            }
+            return skill;
+        })
+        );
+
+        console.log('[4] Skills processed, updating user profile...');
+        const skillsOffered = updatedSkills.map(skill => skill.name).filter(name => name);
+        console.log('[4.1] Skills to save:', skillsOffered);
+
+        const profileUpdateData = {
+        skills_offered: skillsOffered,
+        birth_date: birthDate?.toISOString(),
+        first_name: profile?.first_name,
+        last_name: profile?.last_name,
+        email: profile?.email,
+        phone: profile?.phone,
+        location: profile?.location,
+        language: profile?.language,
+        bio: profile?.bio,
+        social_links: {
+            twitter: profile?.social_links?.twitter || null,
+            linkedin: profile?.social_links?.linkedin || null,
+            facebook: profile?.social_links?.facebook || null,
+            instagram: profile?.social_links?.instagram || null
+        },
+        avatar_url: profile?.avatar_url || null
+        };
+
+    
+        console.log('[4.2] Profile update data:', profileUpdateData);
+
+        const { error: profileError } = await supabase
+            .from('users')
+            .update(profileUpdateData)
+            .eq('id', user.id);
+
+        if (profileError) {
+            console.error('[4.3] Profile update error:', profileError);
+            throw profileError;
+        }
+        console.log('[4.4] Profile updated successfully');
+
+        console.log('[5] Updating user_skills_offered table...');
+        const skillsUpsert = await Promise.all(
+            updatedSkills
+            .filter(skill => skill.name)
+            .map(async (skill) => {
+                const { data: skillData } = await supabase
+                .from('skills')
+                .select('id')
+                .eq('name', skill.name)
+                .single();
+
+                const skillId = skillData?.id || (await supabase
+                .from('skills')
+                .insert({ name: skill.name })
+                .select()
+                .single()
+                ).data.id;
+
+                return {
+                user_id: user.id,
+                skill_id: skillId,
+                images: skill.previews
+                };
+            })
+        );
+
+        // Upsert all records in one operation
+        const { error: upsertError } = await supabase
+            .from('user_skills_offered')
+            .upsert(skillsUpsert, {
+            onConflict: 'user_id,skill_id',
+            ignoreDuplicates: false
+            });
+
+        if (upsertError) throw upsertError;
+
+      
+
+        console.log('[6] Profile update complete');
+        alert('Profile updated successfully!');
+        } catch (error) {
+        console.error('[ERROR] Profile update failed:', {
+            error,
+            timestamp: new Date().toISOString(),
+            user: user?.id || 'unknown',  // Fixed reference
+            skillsState: skills
+        });
+        alert('Failed to update profile. Please try again.');
+        } finally {
+        console.log('[7] Finalizing update process');
+        setSaving(false);
+        }
+    };
+
+        const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) {
+            return;
+        }
+
+        setSaving(true);
+        const file = e.target.files[0];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${profile?.id || 'unknown'}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+        const filePath = `profile-pictures/${fileName}`;
+
+        try {
+            // First check if user is authenticated
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('No authenticated user');
+
+            // Upload the file
+            const { error: uploadError } = await supabase.storage
+            .from('images')
+            .upload(filePath, file, {
+                upsert: true,
+                contentType: file.type
+            });
+
+            if (uploadError) throw uploadError;
+
+            // Get the public URL
+            const { data: { publicUrl } } = supabase.storage
+            .from('images')
+            .getPublicUrl(filePath);
+
+            // Update the user's avatar_url in the database
+            const { error: updateError } = await supabase
+            .from('users')
+            .update({ avatar_url: publicUrl })
+            .eq('id', user.id);
+
+            if (updateError) throw updateError;
+
+            // Update local state
+            setProfile({ ...profile, avatar_url: publicUrl });
+            alert('Profile picture updated successfully!');
+        } catch (error) {
+            console.error('Error uploading avatar:', error);
+            alert('Error uploading avatar. Please try again.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+  
+
+    if (loading) return <div>Loading...</div>;
+
     return (
-        <>
-            {/* Di pa sure if goods sya tignan sa inyo hehe */}
-            <div className="seashell w-[1920px] h-[150px] relative">
-                <img src="/images/logo.png" className="absolute left-[43px] top-[28px] w-16 h-[55px]" />
-                <div className="absolute left-[136px] top-[24px] w-[712px] h-[63px] bg-white rounded-[5px] flex items-center px-6 shadow-sm border border-[0.5px] border-[#BFB6B6]">
-                    <img src="/images/search icon.png" alt="Search" className="w-5 h-5 mr-3" />
-                    <input type="text" placeholder="Search" className="w-full bg-transparent outline-none text-gray-700 placeholder-gray-500" />
-                </div>
-                <img src="/images/message.png" alt="Message" className="absolute left-[1629px] top-[33px] w-[45px] h-[45px] cursor-pointer" />
-                <img src="/images/notification.png" alt="Notification" className="absolute left-[1697px] top-[33px] w-[45px] h-[45px] cursor-pointer" />
-                <img src="/images/man 1.png" alt="Profile" className="absolute left-[1775px] top-[21px] w-[70px] h-[70px] rounded-full cursor-pointer" />
-                <div className="absolute left-[53px] top-[100px] text-[24px] font-semibold text-[#000000]">
-                    My Profile &gt; Edit Profile
-                </div>
-                <img src="/images/save btn.png" alt="Save Button" className="absolute left-[1684px] top-[100px] w-auto h-auto cursor-pointer" />
-            </div>
+        <div className="max-w-7xl mx-auto py-10 px-6">
+            <h2 className="text-2xl font-semibold mb-6">My Profile &gt; Edit Profile</h2>
 
-            <div className="w-full px-20 mt-10 flex gap-10 justify-center">
-                {/* Left Div */}
-                <div className="w-[833px] h-[799px] bg-white shadow rounded-[5px] p-6">
-                    <div className="w-[140px] h-[140px] rounded-full overflow-hidden mx-auto mt-[30px] mb-6">
-                        <img src="/images/edit photo.png" alt="User Profile" className="w-full h-full object-cover cursor-pointer" />
-                    </div>
-                    <div className="flex gap-6 mb-4">
-                        <div className="flex flex-col">
-                            <label className="mb-1 text-base font-medium text-black">First Name</label>
-                            <input type="text" className="w-[364px] h-[46px] border border-[0.5px] border-[#BFB6B6] rounded-[5px] px-4" />
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                {/* Left column */}
+                <div className="space-y-4">
+                    <div className="flex justify-center">
+                        <label className="cursor-pointer">
+                            <img 
+                            src={profile?.avatar_url || "https://via.placeholder.com/100"} 
+                            className="rounded-full w-24 h-24" 
+                            alt="Profile" 
+                            />
+                            <p className="text-sm text-center mt-1">Click to upload new photo</p>
+                            <input 
+                            type="file" 
+                            className="hidden" 
+                            onChange={handleAvatarUpload}
+                            accept="image/*"
+                            />
+                        </label>
                         </div>
-                            <div className="flex flex-col">
-                            <label className="mb-1 text-base font-medium text-black">Last Name</label>
-                            <input type="text" className="w-[364px] h-[46px] border border-[0.5px] border-[#BFB6B6] rounded-[5px] px-4" />
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col mb-4">
-                            <label className="mb-1 text-base font-medium text-black">Email</label>
-                            <input type="email" className="w-[474px] h-[45px] border border-[0.5px] border-[#BFB6B6] rounded-[5px] px-4" />
-                    </div>
-                <div className="flex flex-col mb-4">
-                         <label className="mb-1 text-base font-medium text-black">Phone</label>
-                         <input type="text" className="w-[474px] h-[45px] border border-[0.5px] border-[#BFB6B6] rounded-[5px] px-4" />
-                </div>
-                <div className="flex flex-col mb-6">
-                         <label className="mb-1 text-base font-medium text-black">Address</label>
-                         <input type="text" className="w-[474px] h-[45px] border border-[0.5px] border-[#BFB6B6] rounded-[5px] px-4" />
-                </div>
-
-                <div className="flex gap-6 mb-4">
-                    <div className="flex flex-col">
-                        <label className="mb-1 text-base font-medium text-black">Gender</label>
-                        <select className="w-[200px] h-[46px] border border-[0.5px] border-[#BFB6B6] rounded-[5px] px-4">
-                        <option></option>
-                        <option>Male</option>
-                        <option>Female</option>
-                        </select>
-                    </div>
-                    <div className="flex flex-col">
-                        <label className="mb-1 text-base font-medium text-black">Language</label>
-                        <select className="w-[276px] h-[46px] border border-[0.5px] border-[#BFB6B6] rounded-[5px] px-4">
-                        <option></option>
-                        <option>English</option>
-                        <option>Filipino</option>
-                        </select>
-                    </div>
-                    </div>
-
-                    <div className="flex flex-col mb-4">
-                            <label className="mb-1 text-base font-medium text-black">Date of Birth</label>
-                            <div className="flex gap-4">
-                                <select className="w-[200px] h-[46px] border border-[0.5px] border-[#BFB6B6] rounded-[5px] px-4">
-                                <option disabled selected>Month</option>
-                                {/* Add month options here */}
-                                </select>
-                                <select className="w-[108px] h-[46px] border border-[0.5px] border-[#BFB6B6] rounded-[5px] px-4">
-                                <option disabled selected>Day</option>
-                                {/* Add day options here */}
-                                </select>
-                                <select className="w-[124px] h-[46px] border border-[0.5px] border-[#BFB6B6] rounded-[5px] px-4">
-                                <option disabled selected>Year</option>
-                                {/* Add year options here */}
-                                </select>
-                            </div>
-                            </div>
-
-
-                </div>
-
-               {/* Right Div */}
-                    <div className="w-[1091px] h-[799px] bg-white shadow rounded-[5px] p-6">
-                    <div className="flex flex-col w-full mb-4">
-                        <label className="mb-1 text-base font-medium text-black">Bio</label>
-                        <input type="text" className="w-[509px] h-[45px] border border-[0.5px] border-[#BFB6B6] rounded-[5px] px-4" />
-                    </div>
-
-                    <p className="mb-1">Skills You Offer</p>
-                    <div className="flex gap-4 mb-4">
-                        <button className="border border-[0.5px] border-[#BFB6B6] px-4 py-2 rounded-[5px] flex items-center gap-2">
-                            <img src={UploadButton.src} alt="Upload" width={20} height={20} />
-                            <span>Upload photo</span>
-                        </button>
-                        <input type="text" placeholder="Skill" className="w-[276px] h-[45px] border border-[0.5px] border-[#BFB6B6] rounded-[5px] px-4 placeholder-black"
+                    
+                    <div className="flex gap-7">
+                        <input 
+                        type="text" 
+                        placeholder="First Name" 
+                        className="w-full border p-2 rounded" 
+                        value={profile?.first_name || ''}
+                        onChange={(e) => setProfile({...profile, first_name: e.target.value})}
                         />
-                        <button>
-                            <img src={AddButton.src} alt="Add" width={30} height={30} />
-                        </button>
-                    </div>
-
-
-                    <p className="mb-1">Skills You Want To Learn</p>
-                    <div className="flex gap-4 mb-4">
-                        <input type="text" placeholder="Skill" className="w-[276px] h-[45px] border border-[0.5px] border-[#BFB6B6] rounded-[5px] px-4 placeholder-black" />
-                        <button>
-                        <img src={AddButton.src} alt="Add Skill" width={30} height={30} />
-                        </button>
-                    </div>
-
-                    <p className="mb-1">Your Works</p>
-                    <div className="flex gap-4 mb-4">
-                        <button className="border border-[0.5px] border-[#BFB6B6] px-4 py-2 rounded-[5px] flex items-center gap-2">
-                            <img src={UploadButton.src} alt="Upload Work" width={20} height={20} />
-                            <span>Upload work samples</span>
-                        </button>
-                        <input
-                            type="text"
-                            placeholder="Skill"
-                            className="w-[228px] h-[45px] border border-[0.5px] border-[#BFB6B6] rounded-[5px] px-4 placeholder-black"
+                        <input 
+                        type="text" 
+                        placeholder="Last Name" 
+                        className="w-full border p-2 rounded" 
+                        value={profile?.last_name || ''}
+                        onChange={(e) => setProfile({...profile, last_name: e.target.value})}
                         />
-                        <select className="w-[200px] h-[45px] border border-[0.5px] border-[#BFB6B6] rounded-[5px] px-4">
-                            <option>Date Accomplished</option>
-                        </select>
-                        <button>
-                            <img src={AddButton.src} alt="Add Work" width={30} height={30} />
+                    </div>
+                    
+                    <div className="flex flex-col gap-4">
+                        <input 
+                        type="email" 
+                        placeholder="Email" 
+                        className="w-full border p-2 rounded" 
+                        value={profile?.email || ''}
+                        onChange={(e) => setProfile({...profile, email: e.target.value})}
+                        />
+                        <input 
+                        type="tel" 
+                        placeholder="Phone" 
+                        className="w-full border p-2 rounded" 
+                        value={profile?.phone || ''}
+                        onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                        />
+                        <input 
+                        type="text" 
+                        placeholder="Address" 
+                        className="w-full border p-2 rounded" 
+                        value={profile?.location || ''}
+                        onChange={(e) => setProfile({...profile, location: e.target.value})}
+                        />
+                        <input 
+                        type="text" 
+                        placeholder="Language" 
+                        className="w-full border p-2 rounded" 
+                        value={profile?.language || ''}
+                        onChange={(e) => setProfile({...profile, language: e.target.value})}
+                        />
+                    </div>
+
+                    {/* Date Picker */}
+                    <div className="flex flex-col space-y-2">
+                        <label className="text-sm font-medium">Date of Birth</label>
+                        <DatePicker
+                        selected={birthDate}
+                        onChange={setBirthDate}
+                        className="w-full border p-2 rounded"
+                        showYearDropdown
+                        scrollableYearDropdown
+                        yearDropdownItemNumber={100}
+                        maxDate={new Date()}
+                        dateFormat="MMMM d, yyyy"
+                        />
+                    </div>
+                </div>
+
+                {/* Right column */}
+                <div className="space-y-4">
+                    <textarea 
+                        placeholder="Bio" 
+                        className="w-full border p-2 rounded"
+                        value={profile?.bio || ''}
+                        onChange={(e) => setProfile({...profile, bio: e.target.value})}
+                    ></textarea>
+
+                    {/* Skills Table */}
+                    <div className="border rounded-lg overflow-hidden">
+                        <table className="w-full">
+                        <thead className="bg-gray-50">
+                            <tr>
+                            <th className="px-4 py-2 text-left">Skills</th>
+                            <th className="px-4 py-2 text-left">Images</th>
+                            <th className="px-4 py-2"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {skills.map((skill) => (
+                            <tr key={skill.id} className="border-t">
+                                <td className="px-4 py-2">
+                                <input
+                                    type="text"
+                                    value={skill.name}
+                                    onChange={(e) => handleSkillChange(skill.id, e.target.value)}
+                                    placeholder="Enter skill"
+                                    className="w-full p-2 border rounded"
+                                />
+                                </td>
+                                <td className="px-4 py-2">
+                                <div className="flex flex-wrap gap-2">
+                                    {skill.previews.map((preview, idx) => (
+                                    <div key={idx} className="relative">
+                                        <img 
+                                        src={preview} 
+                                        alt={`Preview ${idx}`} 
+                                        className="w-12 h-12 object-cover rounded"
+                                        />
+                                        <button
+                                        type="button"
+                                        onClick={() => removeImage(skill.id, idx)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                                        >
+                                        <X size={12} />
+                                        </button>
+                                    </div>
+                                    ))}
+                                    <label className="cursor-pointer">
+                                    <div className="w-12 h-12 border-2 border-dashed border-gray-300 rounded flex items-center justify-center">
+                                        <ImageIcon size={20} className="text-gray-400" />
+                                    </div>
+                                    <input
+                                        type="file"
+                                        multiple
+                                        accept="image/*"
+                                        onChange={(e) => handleImageUpload(e, skill.id)}
+                                        className="hidden"
+                                    />
+                                    </label>
+                                </div>
+                                </td>
+                                <td className="px-4 py-2">
+                                <button
+                                    type="button"
+                                    onClick={() => removeSkillRow(skill.id)}
+                                    className="text-red-500 hover:text-red-700"
+                                >
+                                    <X size={20} />
+                                </button>
+                                </td>
+                            </tr>
+                            ))}
+                        </tbody>
+                        </table>
+                        <div className="p-2 border-t">
+                        <button
+                            type="button"
+                            onClick={addSkillRow}
+                            className="flex items-center gap-1 text-blue-500 hover:text-blue-700"
+                        >
+                            <Plus size={16} />
+                            Add Skill
                         </button>
-                    </div>
-
-
-                    <div className="flex gap-6 mb-4">
-                        <div className="flex flex-col w-full">
-                        <label className="mb-1 text-base font-medium text-black">Twitter</label>
-                        <input type="text" className="w-full h-[45px] border border-[0.5px] border-[#BFB6B6] rounded-[5px] px-4" />
-                        </div>
-                        <div className="flex flex-col w-full">
-                        <label className="mb-1 text-base font-medium text-black">LinkedIn</label>
-                        <input type="text" className="w-full h-[45px] border border-[0.5px] border-[#BFB6B6] rounded-[5px] px-4" />
                         </div>
                     </div>
 
-                    <div className="flex gap-6 mb-4">
-                        <div className="flex flex-col w-full">
-                        <label className="mb-1 text-base font-medium text-black">Facebook</label>
-                        <input type="text" className="w-full h-[45px] border border-[0.5px] border-[#BFB6B6] rounded-[5px] px-4" />
-                        </div>
-                        <div className="flex flex-col w-full">
-                        <label className="mb-1 text-base font-medium text-black">Instagram</label>
-                        <input type="text" className="w-full h-[45px] border border-[0.5px] border-[#BFB6B6] rounded-[5px] px-4" />
-                        </div>
+                    <div className="flex gap-8">
+                        <input 
+                        type="text" 
+                        placeholder="Twitter" 
+                        className="w-full border p-2 rounded" 
+                        value={profile?.social_links?.twitter || ''}
+                        onChange={(e) => setProfile({
+                            ...profile, 
+                            social_links: {
+                            ...profile?.social_links,
+                            twitter: e.target.value
+                            }
+                        })}
+                        />
+                        <input 
+                        type="text" 
+                        placeholder="Linked In" 
+                        className="w-full border p-2 rounded" 
+                        value={profile?.social_links?.linkedin || ''}
+                        onChange={(e) => setProfile({
+                            ...profile, 
+                            social_links: {
+                            ...profile?.social_links,
+                            linkedin: e.target.value
+                            }
+                        })}
+                        />
                     </div>
 
-                    <div className="flex flex-col w-full mb-4">
-                        <label className="mb-1 text-base font-medium text-black">Other external links</label>
-                        <input type="text" className="w-[509px] h-[45px] border border-[0.5px] border-[#BFB6B6] rounded-[5px] px-4" />
+                    <div className="flex gap-8">
+                        <input 
+                        type="text" 
+                        placeholder="Facebook" 
+                        className="w-full border p-2 rounded" 
+                        value={profile?.social_links?.facebook || ''}
+                        onChange={(e) => setProfile({
+                            ...profile, 
+                            social_links: {
+                            ...profile?.social_links,
+                            facebook: e.target.value
+                            }
+                        })}
+                        />
+                        <input 
+                        type="text" 
+                        placeholder="Instagram" 
+                        className="w-full border p-2 rounded" 
+                        value={profile?.social_links?.instagram || ''}
+                        onChange={(e) => setProfile({
+                            ...profile, 
+                            social_links: {
+                            ...profile?.social_links,
+                            instagram: e.target.value
+                            }
+                        })}
+                        />
                     </div>
-                    </div>
-            </div>
-        </>
+                </div>
+
+                <div className="col-span-2 flex justify-end mt-6">
+                    <button 
+                        type="submit"
+                        className="bg-red-400 hover:bg-red-500 text-white px-6 py-2 rounded-full flex items-center gap-2"
+                        disabled={saving}
+                    >
+                        {saving ? 'Saving...' : 'Save & Update'}
+                    </button>
+                </div>
+            </form>
+        </div>
     );
 };
 
