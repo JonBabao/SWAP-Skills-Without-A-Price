@@ -15,8 +15,9 @@ import homeJoinButton from '../../../public/images/homeJoinButton.png'
 import EditIcon from '../../../public/images/editIcon.png'
 import SkillsPlaceholder from '../../../public/images/skillsPlaceholder.jpg'
 import CalendarScheduler from './CalendarScheduler'
-import { MessageCircle, Eye, SquareX, Check, X, ArrowDownUp } from 'lucide-react';
+import { MessageCircle, Eye, SquareX, Check, X, ArrowDownUp, ImageIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import UserPortfolio from './UserPortfolio';
 
 const Home: React.FC = () => {
     const supabase = createClient();
@@ -72,7 +73,9 @@ const Home: React.FC = () => {
                
                 const { data: skills, error: skillsError } = await supabase
                     .from('user_skills_offered')
-                    .select('skills (id, name, thumbnail_url)')
+                    .select(`skills (id, name, thumbnail_url),
+                        skill_id, images
+                        `)
                     .eq('user_id', authId)
 
                 const { data: swapData, error } = await supabase
@@ -481,7 +484,7 @@ const Home: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div>
+                            <div className="pb-6">
                                 <div className="flex justify-between">
                                     <p className="font-semibold my-2">Your Mentor</p>
                                     <button onClick={openMentorModal} className="text-sm text-gray-500 hover:underline">See all</button>
@@ -493,8 +496,6 @@ const Home: React.FC = () => {
                                         <div>Skill</div>
                                         <div>Actions</div>
                                     </div>
-
-                                    
 
                                     {swaps.map((mentor, index) => {
                                         const isCurrentUserReceiver = mentor.user.id === userData.id;
@@ -750,11 +751,7 @@ const Home: React.FC = () => {
                     )}
 
                     {activeTab === 'portfolio' && (
-                    <div>
-                   
-                        <h2 className="text-xl font-bold mb-4">Portfolio</h2>
-                        <p>This is the Portfolio tab.</p>
-                    </div>
+                        <UserPortfolio />
                     )}
 
                     {activeTab === 'reviews' && (
