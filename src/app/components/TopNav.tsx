@@ -39,7 +39,9 @@ const TopNav: React.FC = () => {
         <div className="hidden fixed lg:flex flex-row justify-between items-center bg-[#FBF8F2] inset-0 z-50 w-full h-20 text-[#2e2e2e]">
             {userData ? (
                 <><div className="flex items-center gap-4">
-                    <img src={Logo.src} className="h-10 w-12 ml-4" />
+                    <Link href="/home">
+                        <img src={Logo.src} className="h-10 w-12 ml-4" />
+                    </Link>
                     <input type="text" placeholder="🔍 Search..." className="px-5 py-3 bg-white rounded-full w-128 focus:outline-none" />
                 </div>
                 <div className="flex items-center gap-4">
