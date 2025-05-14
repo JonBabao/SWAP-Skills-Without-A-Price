@@ -175,7 +175,7 @@ const LessonViewer = () => {
         {lessons.length === 0 ? (
           <p className="text-gray-500 text-sm">No lessons scheduled for this date.</p>
         ) : (
-          lessons.map(lesson => (
+          lessons.slice(0,1).map(lesson => (
             <div key={lesson.id} className="border border-[#CBD7DF] rounded-xl p-4 px-8 shadow-sm mb-4 space-y-2">
               <h4 className="font-bold text-md flex items-center">
                 <span className="text-red-500 mr-2 text-xl">•</span>
