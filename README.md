@@ -68,7 +68,7 @@ This project uses `next/font` for automatic font optimization, with **Geist** as
 
 - **Framework**: Next.js  
 - **Language**: TypeScript  
-- **Styling**: Tailwind CSS *(adjust if using a different setup)*  
+- **Styling**: Tailwind CSS  
 - **Font Optimization**: `next/font` with Geist
 
 ---
