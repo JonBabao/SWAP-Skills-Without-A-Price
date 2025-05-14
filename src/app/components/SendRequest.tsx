@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Logo from ".././../../public/images/logoBig.png";
 import { createClient } from '../../../lib/supabase/client'
-import { MessageCircle, Bell } from 'lucide-react';
+import { MessageCircle, Bell, X } from 'lucide-react';
 import Link from 'next/link';
 import SkillsPlaceHolder from '../../../public/images/skillsPlaceholder.jpg'
 
@@ -188,6 +188,33 @@ const SendRequest: React.FC = () => {
         }
     };
 
+    const [showSkillsModal, setShowSkillsModal] = useState(false);
+    const [modalContent, setModalContent] = useState<{
+        title: string;
+        skills: any[];
+        type: 'offered' | 'wanted';
+    } | null>(null);
+
+    // ... (keep all your existing useEffect hooks the same)
+
+    const openSkillsModal = (type: 'offered' | 'wanted') => {
+        if (type === 'offered') {
+            setModalContent({
+                title: 'All Skills Offered',
+                skills: selectedUserSkillsOffered,
+                type: 'offered'
+            });
+        } else {
+            setModalContent({
+                title: 'All Skills Wanted',
+                skills: selectedUser.skills_wanted || [],
+                type: 'wanted'
+            });
+        }
+        setShowSkillsModal(true);
+    };
+
+
     return (
         <div className="flex md:flex-row p-6 bg-[#FFFCF8] rounded-lg w-full mt-22 max-w-6xl mx-auto gap-6">
             <div className="p-6 bg-white rounded-lg shadow w-96 mx-auto mb-6">
@@ -242,12 +269,21 @@ const SendRequest: React.FC = () => {
                             <p className="text-red-500 text-sm mt-1">★ 4.7 Ratings</p>
                         </div>
 
-                        <h3 className="text-left font-semibold text-md mt-6 mb-2">Skills Offered</h3>
+                      
 
-                        <div
-                            className="flex flex-col gap-4 overflow-x-auto pb-2 scroll-smooth"
-                            style={{ scrollbarWidth: 'none' }}
-                        >
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-left font-semibold text-md">Skills Offered</h3>
+                            {selectedUserSkillsOffered && (
+                                <button 
+                                    onClick={() => openSkillsModal('offered')}
+                                    className="text-sm text-gray-500 hover:underline"
+                                >
+                                    See All
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="flex flex-col gap-4 overflow-x-auto pb-2 scroll-smooth">
                             {selectedUserSkillsOffered.length > 0 ? (
                                 selectedUserSkillsOffered
                                 .slice(0,3)
@@ -256,10 +292,7 @@ const SendRequest: React.FC = () => {
                                     const imageUrl = skill.thumbnail_url || SkillsPlaceHolder.src;
 
                                     return (
-                                        <div
-                                            key={skill.id}
-                                            className="flex items-center rounded-xl text-sm flex-shrink-0"
-                                        >
+                                        <div key={skill.id} className="flex items-center rounded-xl text-sm flex-shrink-0">
                                             <img
                                                 src={imageUrl}
                                                 alt={skill.name}
@@ -274,11 +307,21 @@ const SendRequest: React.FC = () => {
                             )}
                         </div>
                         
-                        <h3 className="text-left font-semibold text-md mt-6 mb-2">Skills Wanted</h3>
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-left font-semibold text-md">Skills Wanted</h3>
+                            {selectedUser.skills_wanted && (
+                                <button 
+                                    onClick={() => openSkillsModal('wanted')}
+                                    className="text-sm text-gray-500 hover:underline"
+                                >
+                                    See All
+                                </button>
+                            )}
+                        </div>
                         <div className="bg-gray-50 rounded-xl p-4 text-left text-sm">
                             {selectedUser.skills_wanted && selectedUser.skills_wanted.length > 0 ? (
-                                selectedUser.skills_wanted.map((skill: string, index: number) => (
-                                <p key={index}>{skill}</p>
+                                selectedUser.skills_wanted.slice(0, 3).map((skill: string, index: number) => (
+                                    <p key={index}>{skill}</p>
                                 ))
                             ) : (
                                 <p className="text-gray-400 italic">No skills wanted listed.</p>
@@ -402,6 +445,46 @@ const SendRequest: React.FC = () => {
                     </div>
                 </form>
             </div>
+            {showSkillsModal && modalContent && (
+                <div className="fixed inset-0 bg-black/35 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold">{modalContent.title}</h3>
+                            <button 
+                                onClick={() => setShowSkillsModal(false)}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            {modalContent.type === 'offered' ? (
+                                modalContent.skills.map((entry) => {
+                                    const skill = entry.skills;
+                                    const imageUrl = skill.thumbnail_url || SkillsPlaceHolder.src;
+                                    return (
+                                        <div key={skill.id} className="flex items-center gap-4 p-2 border-b">
+                                            <img
+                                                src={imageUrl}
+                                                alt={skill.name}
+                                                className="w-10 h-10 object-cover rounded-lg"
+                                            />
+                                            <span>{skill.name}</span>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                modalContent.skills.map((skill: string, index: number) => (
+                                    <div key={index} className="p-2 border-b">
+                                        {skill}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
