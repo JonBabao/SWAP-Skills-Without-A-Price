@@ -52,9 +52,6 @@ const Home: React.FC = () => {
 
     const openAllRequests = () => setShowAllRequests(true);
 
-
-
-
     useEffect(() => {
         const fetchUserData = async () => {
             const { data: auth, error: authError } = await supabase.auth.getUser();
@@ -236,10 +233,9 @@ const Home: React.FC = () => {
     return(
         <div className="flex flex-row">
             {userData ? (
-                <><div className="max-w-md mt-20 mx-auto bg-white border-[#CBD7DF] border-1 rounded-tr-2xl p-6 text-center">
+                <><div className="max-w-md w-128 mt-20 mx-auto bg-white border-[#CBD7DF] border-1 rounded-tr-2xl p-6 text-center">
                     {/* Avatar and Edit */}
                     <div className="relative w-full flex justify-center mb-4">
-
                         <img src={userData.avatar_url} className="rounded-full w-30 h-30" />
                         <button className="absolute bottom-0 right-35 bg-white p-1 rounded-full shadow cursor-pointer" onClick={editProfile}>
                             <img src={EditIcon.src} alt="Edit" className="w-4 h-4" />
