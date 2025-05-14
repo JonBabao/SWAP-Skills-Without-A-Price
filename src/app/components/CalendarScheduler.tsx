@@ -22,6 +22,14 @@ interface Lesson {
   mentor_id: {
     username: string;
   };
+  user_skill: {
+    id: string;
+    name: string;
+  };
+  mentor_skill: {
+    id: string;
+    name: string;
+  };
 }
 
 const LessonViewer = () => {
@@ -54,23 +62,19 @@ const LessonViewer = () => {
 
     const { data: lessonsData, error } = await supabase
       .from("schedules")
-      .select(
-        `
+      .select(`
         id,
         title,
         date_time,
         mode,
-        user_id (
-          username
-        ),
-        mentor_id (
-          username
-        )
-      `
-      )
+        user_id (username),
+        mentor_id (username),
+        user_skill (id, name),
+        mentor_skill (id, name) 
+      `)
       .gte("date_time", start.toISOString())
       .lte("date_time", end.toISOString())
-      .or(`user_id.eq.${user.id},mentor_id.eq.${user.id}`); 
+      .or(`user_id.eq.${user.id},mentor_id.eq.${user.id}`);
 
     if (error) {
       console.error("Supabase error:", error);
@@ -128,12 +132,15 @@ const handleMarkAsDone = async (lessonId: string) => {
   try {
     const { data: lesson, error: fetchError } = await supabase
       .from('schedules')
-      .select('*')
+      .select(`
+        *,
+        user_skill (id, name),
+        mentor_skill (id, name)
+      `)
       .eq('id', lessonId)
       .single();
 
     if (fetchError) throw fetchError;
-
 
     const { error: deleteError } = await supabase
       .from('schedules')
@@ -142,22 +149,21 @@ const handleMarkAsDone = async (lessonId: string) => {
 
     if (deleteError) throw deleteError;
 
-   
     const { error: sessionError } = await supabase
       .from('sessions')
       .insert({
         date: lesson.date_time.split('T')[0],
         time: lesson.date_time.split('T')[1].slice(0, 8),
-        skill_id: lesson.skill_id, 
         user_id: lesson.user_id,
         mentor_id: lesson.mentor_id,
+        user_skill: lesson.user_skill?.id,
+        mentor_skill: lesson.mentor_skill?.id,
         status: 'completed',
-        rating: 3, 
+        rating: 3,
         mode: lesson.mode
       });
 
     if (sessionError) throw sessionError;
-
 
     setLessons(prev => prev.filter(l => l.id !== lessonId));
     setAllLessons(prev => prev.filter(l => l.id !== lessonId));
@@ -169,16 +175,18 @@ const handleMarkAsDone = async (lessonId: string) => {
 
 const handleCancel = async (lessonId: string) => {
   try {
-    // 1. Get the lesson details before deleting
     const { data: lesson, error: fetchError } = await supabase
       .from('schedules')
-      .select('*')
+      .select(`
+        *,
+        user_skill (id),
+        mentor_skill (id)
+      `)
       .eq('id', lessonId)
       .single();
 
     if (fetchError) throw fetchError;
 
-    // 2. Delete the lesson from schedules
     const { error: deleteError } = await supabase
       .from('schedules')
       .delete()
@@ -186,23 +194,22 @@ const handleCancel = async (lessonId: string) => {
 
     if (deleteError) throw deleteError;
 
-    // 3. Add to sessions table as "cancelled"
     const { error: sessionError } = await supabase
       .from('sessions')
       .insert({
         date: lesson.date_time.split('T')[0],
         time: lesson.date_time.split('T')[1].slice(0, 8),
-        skill_id: lesson.skill_id, 
-        user_id: lesson.title,
+        user_id: lesson.user_id,
         mentor_id: lesson.mentor_id,
+        user_skill: lesson.user_skill?.id,
+        mentor_skill: lesson.mentor_skill?.id,
         status: 'cancelled',
-        rating: null, // No rating for cancelled sessions
+        rating: null,
         mode: lesson.mode
       });
 
     if (sessionError) throw sessionError;
 
-    // 4. Update UI immediately
     setLessons(prev => prev.filter(l => l.id !== lessonId));
     setAllLessons(prev => prev.filter(l => l.id !== lessonId));
 

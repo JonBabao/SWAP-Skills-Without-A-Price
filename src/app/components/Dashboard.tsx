@@ -19,6 +19,7 @@ import { MessageCircle, Eye, SquareX, Check, X, ArrowDownUp, ImageIcon } from 'l
 import { useRouter } from 'next/navigation';
 import UserPortfolio from './UserPortfolio';
 import ProfilePlaceholder from '../../../public/images/profilePlaceholder.jpg'
+import Link from 'next/link'
 
 const Home: React.FC = () => {
     const supabase = createClient();
@@ -101,14 +102,17 @@ const Home: React.FC = () => {
                     .from('sessions')
                     .select(`
                         date,
-                        skill_id,
-                        user:user_id ( username ),
-                        mentor:mentor_id ( username ),
+                        time,
                         status,
-                        rating
+                        rating,
+                        mode,
+                        user_skill:user_skill(id, name),
+                        mentor_skill:mentor_skill(id, name),
+                        user:user_id(username, avatar_url),
+                        mentor:mentor_id(username, avatar_url)
                     `)
                     .or(`user_id.eq.${authId},mentor_id.eq.${authId}`)
-                    .order('date', { ascending: false }); 
+                    .order('date', { ascending: false });
                     
                     
                 const { data: progressData, error: progressError } = await supabase
@@ -133,8 +137,8 @@ const Home: React.FC = () => {
                         mentor_id,
                         user:user_id ( id, username, avatar_url ),
                         mentor:mentor_id ( id, username, avatar_url ),
-                        user_skill ( name ),
-                        mentor_skill ( name ),
+                        user_skill ( id, name ),
+                        mentor_skill ( id, name ),
                         date_time, 
                         message, 
                         status,
@@ -157,40 +161,83 @@ const Home: React.FC = () => {
     }, []);
 
     const acceptPending = async (req: any) => {
+    try {
         const titleName = `${req.user_skill?.name} and ${req.mentor_skill?.name}`;
-        const { error: acceptError } = await supabase
-            .from('schedules')
-            .insert({
-                title: titleName,
-                user_id: req.user.id,
-                mentor_id: req.mentor.id,
-                date_time: req.date_time,
-                mode: req.mode
-            });
+        const dateTime = new Date(req.date_time);
+        
+        // 1. Create the schedule with both skills
+        const { error: scheduleError } = await supabase
+        .from('schedules')
+        .insert({
+            title: titleName,
+            user_id: req.user.id,
+            mentor_id: req.mentor.id,
+            date_time: req.date_time,
+            mode: req.mode,
+            user_skill: req.user_skill?.id,
+            mentor_skill: req.mentor_skill?.id
+        });
 
-        if (acceptError) {
-            console.error("Insert failed:", acceptError);
-        } else {
-            console.log("Schedule inserted successfully");
-        }
+        if (scheduleError) throw scheduleError;
 
+        // 2. Create the session record
+        const { error: sessionError } = await supabase
+        .from('sessions')
+        .insert({
+            date: dateTime.toISOString().split('T')[0],
+            time: dateTime.toTimeString().split(' ')[0],
+            user_id: req.user.id,
+            mentor_id: req.mentor.id,
+            status: 'completed',
+            rating: 5,
+            mode: req.mode,
+            mentor_skill: req.mentor_skill?.id,
+            user_skill: req.user_skill?.id
+        });
+
+        if (sessionError) throw sessionError;
+
+        // 3. Create the swap record
+        const { error: swapError } = await supabase
+        .from('swaps')
+        .insert({
+            user_id: req.user.id,
+            mentor_id: req.mentor.id,
+            user_skill: req.user_skill?.id,
+            mentor_skill: req.mentor_skill?.id,
+            last_session_date: dateTime.toISOString().split('T')[0],
+            status: false, // Default to false (active)
+            rating: null, // No rating initially
+            completed: false,
+            date_completed: null,
+            user_skill_progress: 0, // Starting progress
+            mentor_skill_progress: 0  // Starting progress
+        });
+
+        if (swapError) throw swapError;
+
+        // 4. Update the request status
         const { error: updateRequestsError } = await supabase
-            .from('requests')
-            .update({ status: true })
-            .eq('id', req.id)
+        .from('requests')
+        .update({ status: true })
+        .eq('id', req.id);
 
-        if (updateRequestsError) {
-            console.log("update request fail: ", updateRequestsError)
-        }
+        if (updateRequestsError) throw updateRequestsError;
 
+        // 5. Update local state to remove the request
         setRequests(prev => prev.filter(r =>
-            !(
-                r.user.id === req.user.id &&
-                r.mentor.id === req.mentor.id &&
-                r.date_time === req.date_time
-            )
+        !(
+            r.user.id === req.user.id &&
+            r.mentor.id === req.mentor.id &&
+            r.date_time === req.date_time
+        )
         ));
 
+        console.log("Request accepted, records created successfully");
+    } catch (error) {
+        console.error("Error in acceptPending:", error);
+        // Optionally show error to user
+    }
     };
 
     const declinePending = async (req: any) => {
@@ -440,52 +487,62 @@ const Home: React.FC = () => {
 
                                 <div className="bg-white rounded-lg px-8 pb-8">
                                     <table className="min-w-full text-xs text-left text-gray-700">
-                                        <thead>
-                                            <tr className="text-center">
-                                                <th className="px-4 py-2">Date</th>
-                                                <th className="px-4 py-2">Skill</th>
-                                                <th className="px-4 py-2">Learner</th>
-                                                <th className="px-4 py-2">Mentor</th>
-                                                <th className="px-4 py-2">Status</th>
-                                                <th className="px-4 py-2">Rating</th>
+                                    <thead>
+                                        <tr className="text-center">
+                                        <th className="px-4 py-2">Date</th>
+                                        <th className="px-4 py-2">Skill</th>
+                                        <th className="px-4 py-2">Learner</th>
+                                        <th className="px-4 py-2">Mentor</th>
+                                        <th className="px-4 py-2">Status</th>
+                                        <th className="px-4 py-2">Rating</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="px-8">
+                                        {Array.isArray(sessions) && sessions.length > 0 ? (
+                                        sessions.map((session, idx) => {
+                                            const date = new Date(session.date).toLocaleDateString("en-US", {
+                                            month: "short",
+                                            day: "numeric",
+                                            year: "numeric",
+                                            });
+                                            
+                                            const isYouMentor = session.mentor?.username === userData?.username;
+                                            const isCompleted = session.status === "completed";
+                                            const rating = session.rating || 0; // Default to 0 if null
+
+                                            return (
+                                            <tr key={idx} className="border-b border-gray-200 text-center">
+                                                <td className="px-4 py-2">{date}</td>
+                                                <td className="px-4 py-2">
+                                                {session.user_skill?.name} and {session.mentor_skill?.name}
+                                                </td>
+                                                <td className="px-4 py-2">
+                                                {isYouMentor ? session.user?.username : "You"}
+                                                </td>
+                                                <td className="px-4 py-2">
+                                                {isYouMentor ? "You" : session.mentor?.username}
+                                                </td>
+                                                <td className="px-4 py-2">
+                                                <span className={`text-xs font-medium px-3 py-1 rounded-full ${
+                                                    isCompleted ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'
+                                                }`}>
+                                                    {isCompleted ? "Completed" : "Cancelled"}
+                                                </span>
+                                                </td>
+                                                <td className="px-4 py-2 text-yellow-400">
+                                                {isCompleted ? "★".repeat(rating) + "☆".repeat(5 - rating) : "—"}
+                                                </td>
                                             </tr>
-                                        </thead>
-                                        <tbody className="px-8">
-                                            {Array.isArray(sessions) && sessions.length > 0 ? (
-                                                sessions.map((session, idx) => {
-                                                const date = new Date(session.date).toLocaleDateString("en-US", {
-                                                    month: "short",
-                                                    day: "numeric",
-                                                    year: "numeric",
-                                                });
-
-                                                const isYouMentor = session.mentor?.username === userData.username;
-                                                const isCompleted = session.status; 
-                                                const rating = session.rating; 
-
-                                                return (
-                                                    <tr key={idx} className="border-b border-gray-200 text-center">
-                                                    <td className="px-4 py-2">{date}</td>
-                                                    <td className="px-4 py-2">{session.skill_id}</td>
-                                                    <td className="px-4 py-2">{isYouMentor ? session.user?.username : "You"}</td>
-                                                    <td className="px-4 py-2">{isYouMentor ? "You" : session.mentor?.username}</td>
-                                                    <td className="px-4 py-2">
-                                                        <span className={`text-xs font-medium px-3 py-1 rounded-full ${isCompleted ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
-                                                        {isCompleted ? "Completed" : "Cancelled"}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-4 py-2 text-yellow-400">
-                                                        {isCompleted ? "★".repeat(rating) + "☆".repeat(5 - rating) : "—"}
-                                                    </td>
-                                                    </tr>
-                                                );
-                                                })
-                                            ) : (
-                                                <tr>
-                                                <td colSpan={6} className="text-center text-gray-400 py-4">No sessions found.</td>
-                                                </tr>
-                                            )}
-                                            </tbody>        
+                                            );
+                                        })
+                                        ) : (
+                                        <tr>
+                                            <td colSpan={6} className="text-center text-gray-400 py-4">
+                                            No sessions found.
+                                            </td>
+                                        </tr>
+                                        )}
+                                    </tbody>        
                                     </table>
                                 </div>
                             </div>
@@ -497,63 +554,53 @@ const Home: React.FC = () => {
                                 </div>
                                 
                                 <div className="bg-white rounded-xl p-6 text-xs text-left">
-                                    <div className="grid grid-cols-3 text-black font-medium mb-4 text-center">
-                                        <div>Instructor Name and Last Session</div>
-                                        <div>Skill</div>
-                                        <div>Actions</div>
+                                    <div className="grid grid-cols-2 text-black font-medium mb-4 text-center">
+                                    <div>Instructor Name and Last Session</div>
+                                    <div>Skill</div>
                                     </div>
 
-                                    {swaps.map((mentor, index) => {
-                                        const isCurrentUserReceiver = mentor.user.id === userData.id;
-                                        const displayedSkill = isCurrentUserReceiver
-                                            ? mentor.user_skill?.name
-                                            : mentor.mentor_skill?.name;
-                                     
-                                        const displayedPartner = isCurrentUserReceiver ? mentor.mentor : mentor.user;
+                                    {swaps?.map((swap, index) => {
+                                    // Determine if current user is the learner (user) or mentor
+                                    const isUser = swap.user?.id === userData?.id;
+                                    const displayedSkill = isUser ? swap.mentor_skill?.name : swap.user_skill?.name;
+                                    const displayedPartner = isUser ? swap.mentor : swap.user;
 
-                                        return (
-                                            <div
-                                                key={index}
-                                                className="grid grid-cols-3 items-center py-4 border-t border-gray-200"
-                                            >
-                                                {/* Partner and Date */}
-                                                <div className="flex items-center justify-center space-x-4">
-                                                    <img
-                                                        src={displayedPartner?.avatar_url || ProfilePlaceholder.src}
-                                                        alt="Partner"
-                                                        className="h-10 w-10 rounded-full"
-                                                    />
-                                                    <div>
-                                                        <p className="text-black font-medium">
-                                                            {displayedPartner?.username}
-                                                        </p>
-                                                        <p className="text-gray-500 text-sm">
-                                                            {new Date(mentor.last_session_date).toLocaleDateString("en-US", {
-                                                                month: "long",
-                                                                day: "numeric",
-                                                                year: "numeric",
-                                                            })}
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                {/* Skill being received */}
-                                                <div className="text-center">
-                                                    <p className="text-black">{displayedSkill}</p>
-                                                </div>
-
-                                                {/* Action */}
-                                                <div className="text-center">
-                                                    <button className="bg-red-100 text-red-700 px-4 py-1.5 rounded-full text-xs">
-                                                        Show Details
-                                                    </button>
-                                                </div>
+                                    return (
+                                        <div
+                                        key={index}
+                                        className="grid grid-cols-2 items-center py-4 border-t border-gray-200"
+                                        >
+                                        {/* Partner and Date */}
+                                        <div className="flex items-center justify-center space-x-4">
+                                            <img
+                                            src={displayedPartner?.avatar_url || ProfilePlaceholder.src}
+                                            alt="Partner"
+                                            className="h-10 w-10 rounded-full"
+                                            />
+                                            <div>
+                                            <p className="text-black font-medium">
+                                                {displayedPartner?.username || 'Unknown'}
+                                            </p>
+                                            <p className="text-gray-500 text-sm">
+                                                {swap.last_session_date ? 
+                                                new Date(swap.last_session_date).toLocaleDateString("en-US", {
+                                                    month: "long",
+                                                    day: "numeric",
+                                                    year: "numeric",
+                                                }) : 'No sessions yet'}
+                                            </p>
                                             </div>
-                                        );
-                                    })}
+                                        </div>
 
+                                        {/* Skill being exchanged */}
+                                        <div className="text-center">
+                                            <p className="text-black">{displayedSkill || 'No skill specified'}</p>
+                                        </div>
+                                        </div>
+                                    );
+                                    })}
                                 </div>
-                            </div>
+                                </div>
 
                         </section>
                         <CalendarScheduler />
@@ -618,14 +665,11 @@ const Home: React.FC = () => {
                                                     </div>
 
                                                     <div className="flex flex-col mt-4 gap-1">
-                                                        <button className="flex text-sm items-center bg-[#FF7A59] text-white px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
-                                                            <Eye className="w-4 h-4 mr-2" />
-                                                            View details
-                                                        </button>
-                                                        <button className="flex text-sm items-center text-white bg-[#FF7A59] px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
+                                                       
+                                                        <Link href='/chat' className="flex text-sm items-center text-white bg-[#FF7A59] px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
                                                             <MessageCircle className="w-4 h-4 mr-2" />
                                                             Message
-                                                        </button>
+                                                        </Link>
                                                         <button className="flex text-sm items-center text-white bg-[#FF7A59] px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
                                                             <SquareX className="w-4 h-4 mr-2" />
                                                             Cancel
@@ -683,13 +727,11 @@ const Home: React.FC = () => {
                                                         <div className="flex w-full items-center justify-between mt-2">
                                                             <div className="flex items-center gap-2">
                                                                 <button className="text-sm border border-red-300 px-3 py-1 rounded-full bg-white">
-                                                                    <span className="text-yellow-600 mr-2">★ ★ ★ ★ ☆</span>
+                                                                    <span className="text-yellow-600 mr-2">★★★★☆</span>
                                                                     Review
                                                                 </button>
                                                             </div>
-                                                            <button className="text-xs bg-[#FF7A59] hover:bg-orange-600 rounded-full px-3 font-semibold cursor-pointer text-white h-8">
-                                                                View Summary
-                                                            </button>
+                                                      
                                                         </div>
                                                     </div>
                                                 );
@@ -806,7 +848,7 @@ const Home: React.FC = () => {
                             return (
                             <tr key={idx} className="border-b border-gray-200 text-center">
                                 <td className="px-4 py-2">{date}</td>
-                                <td className="px-4 py-2">{session.skill?.name}</td>
+                                <td className="px-4 py-2">{session.user_skill?.name} and {session.mentor_skill?.name}</td>
                                 <td className="px-4 py-2">{isYouMentor ? session.user?.username : "You"}</td>
                                 <td className="px-4 py-2">{isYouMentor ? "You" : session.mentor?.username}</td>
                                 <td className="px-4 py-2">
@@ -815,7 +857,7 @@ const Home: React.FC = () => {
                                 </span>
                                 </td>
                                 <td className="px-4 py-2 text-yellow-400">
-                                {isCompleted ? "★ ".repeat(rating) + "☆".repeat(5 - rating) : "—"}
+                                {isCompleted ? "★".repeat(rating) + "☆".repeat(5 - rating) : "—"}
                                 </td>
                             </tr>
                             );
@@ -833,10 +875,10 @@ const Home: React.FC = () => {
                         <h2 className="text-lg font-semibold">All Mentors</h2>
                         <button onClick={closeMentorModal} className="text-gray-600 hover:text-gray-900 text-xl font-bold">&times;</button>
                     </div>
-                    <div className="grid grid-cols-3 text-black font-medium mb-4 text-center">
+                    <div className="grid grid-cols-2 text-black font-medium mb-4 text-center">
                         <div>Instructor Name and Last Session</div>
                         <div>Skill</div>
-                        <div>Actions</div>
+                
                     </div>
 
                     {swaps.map((mentor, index) => {
@@ -850,7 +892,7 @@ const Home: React.FC = () => {
                         return (
                             <div
                                 key={index}
-                                className="grid grid-cols-3 items-center py-4 border-t border-gray-200"
+                                className="grid grid-cols-2 items-center py-4 border-t border-gray-200"
                             >
                                 {/* Partner and Date */}
                                 <div className="flex items-center justify-center space-x-4">
@@ -878,12 +920,7 @@ const Home: React.FC = () => {
                                     <p className="text-black">{displayedSkill}</p>
                                 </div>
 
-                                {/* Action */}
-                                <div className="text-center">
-                                    <button className="bg-red-100 text-red-700 px-4 py-1.5 rounded-full text-xs">
-                                        Show Details
-                                    </button>
-                                </div>
+                            
                             </div>
                         );
                     })}
@@ -902,62 +939,68 @@ const Home: React.FC = () => {
                         </div>
 
                         <div className="flex gap-3">
-                            {swaps.map((swap, idx) => {
-                                const isUser = swap.user.id === userData.id;
-                                const otherUser = isUser ? swap.mentor : swap.user;
-                                const offeredSkill = isUser ? swap.user_skill?.name : swap.mentor_skill?.name;
-                                const requestedSkill = isUser ? swap.mentor_skill?.name : swap.user_skill?.name;
-                                const avatar_url = otherUser.avatar_url;
+                                                                    {swaps?.filter(swap => swap.status).length === 0 ? (
+                                            <div className="text-center text-gray-500 mt-4">No active swaps yet.</div>
+                                        ) : (
+                                        swaps
+                                            ?.filter(swap => swap.status)
+                                            .slice(0, 3)
+                                            .map((swap, idx) => {
+                                            const isUser = swap.user.id === userData.id;
+                                            const otherUser = isUser ? swap.mentor : swap.user;
+                                            const offeredSkill = isUser ? swap.user_skill?.name : swap.mentor_skill?.name;
+                                            const requestedSkill = isUser ? swap.mentor_skill?.name : swap.user_skill?.name;
+                                            const avatar_url = otherUser.avatar_url;
+                                            
+                                            const nextSchedule = schedules
+                                                ?.filter(
+                                                    (s) => new Date(s.date_time).getTime() > new Date().getTime()
+                                                )
+                                                ?.sort((a, b) => new Date(a.date_time) - new Date(b.date_time))[0];
 
-                                const nextSchedule = schedules
-                                    ?.filter(
-                                        (s) => new Date(s.date_time).getTime() > new Date().getTime()
-                                    )
-                                    ?.sort((a, b) => new Date(a.date_time) - new Date(b.date_time))[0];
+                                            return (
+                                                <div key={idx} className="w-54 bg-white rounded-xl p-4 border border-[#FF7A59]">
+                                                    <div className="flex gap-2">
+                                                        <img src={avatar_url || ProfilePlaceholder.src} className="w-10 h-10 rounded-full" />
+                                                        <div>
+                                                            <p className="text-base font-semibold">{otherUser?.username}</p>
+                                                            <p className="break-words max-w-30 text-xs text-gray-500">@{otherUser?.email}</p>
+                                                        </div>
+                                                    </div>
 
-                                return (
-                                    <div key={idx} className="w-54 bg-white rounded-xl p-4 border border-[#FF7A59]">
-                                        <div className="flex gap-2">
-                                            <img src={avatar_url || ProfilePlaceholder.src} className="w-10 h-10 rounded-full" />
-                                            <div>
-                                                <p className="text-base font-semibold">{otherUser?.username}</p>
-                                                <p className="break-words max-w-30 text-xs text-gray-500">@{otherUser?.email}</p>
-                                            </div>
-                                        </div>
 
-                                        <div className="mt-2 text-sm space-y-2">
-                                            <p><strong>Skill offered:</strong><br />{offeredSkill}</p>
-                                            <p><strong>Skill requested:</strong><br />{requestedSkill}</p>
-                                            <p><strong>Next session:</strong><br />
-                                            {nextSchedule
-                                                ? new Date(nextSchedule.date_time).toLocaleString("en-US", {
-                                                    month: "long",
-                                                    day: "numeric",
-                                                    year: "numeric",
-                                                    hour: "2-digit",
-                                                    minute: "2-digit",
-                                                    })
-                                                : "No upcoming session"}
-                                            </p>
-                                        </div>
+                                                    <div className="mt-2 text-sm space-y-2">
+                                                        <p><strong>Skill offered:</strong><br />{offeredSkill}</p>
+                                                        <p><strong>Skill requested:</strong><br />{requestedSkill}</p>
+                                                        <p><strong>Next session:</strong><br />
+                                                            {nextSchedule
+                                                                ? new Date(nextSchedule.date_time).toLocaleString("en-US", {
+                                                                    month: "long",
+                                                                    day: "numeric",
+                                                                    year: "numeric",
+                                                                    hour: "2-digit",
+                                                                    minute: "2-digit",
+                                                                    })
+                                                                : "No upcoming session"}
 
-                                        <div className="flex flex-col mt-4 gap-1">
-                                            <button className="flex text-sm items-center bg-[#FF7A59] text-white px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
-                                                <Eye className="w-4 h-4 mr-2" />
-                                                View details
-                                            </button>
-                                            <button className="flex text-sm items-center text-white bg-[#FF7A59] px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
-                                                <MessageCircle className="w-4 h-4 mr-2" />
-                                                Message
-                                            </button>
-                                            <button className="flex text-sm items-center text-white bg-[#FF7A59] px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
-                                                <SquareX className="w-4 h-4 mr-2" />
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="flex flex-col mt-4 gap-1">
+                                                       
+                                                        <Link href='/chat' className="flex text-sm items-center text-white bg-[#FF7A59] px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
+                                                            <MessageCircle className="w-4 h-4 mr-2" />
+                                                            Message
+                                                        </Link>
+                                                        <button className="flex text-sm items-center text-white bg-[#FF7A59] px-2 py-1 rounded-full cursor-pointer hover:bg-orange-500">
+                                                            <SquareX className="w-4 h-4 mr-2" />
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
                         </div>
                     </div>
                 </div>
@@ -1014,9 +1057,7 @@ const Home: React.FC = () => {
                                                             Review
                                                         </button>
                                                     </div>
-                                                    <button className="text-xs bg-[#FF7A59] hover:bg-orange-600 rounded-full px-3 font-semibold cursor-pointer text-white h-8">
-                                                        View Summary
-                                                    </button>
+                                                  
                                                 </div>
                                             </div>
                                         );
