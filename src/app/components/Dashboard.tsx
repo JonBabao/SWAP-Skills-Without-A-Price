@@ -101,7 +101,7 @@ const Home: React.FC = () => {
                     .from('sessions')
                     .select(`
                         date,
-                        skill:skill_id ( name ),
+                        skill_id,
                         user:user_id ( username ),
                         mentor:mentor_id ( username ),
                         status,
@@ -215,6 +215,10 @@ const Home: React.FC = () => {
 
     const editProfile = async () => {
         router.push("/dashboard/editProfile")
+    }
+
+    const handleJoinNow = () => {
+        router.push('/home')
     }
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -385,6 +389,7 @@ const Home: React.FC = () => {
                                     <p className="mb-4">LEARN. SHARE. CONNECT.</p>
                                     <p className="text-white text-2xl font-semibold break-words">Build your skills bank — one swap at a time.</p>
                                     <button
+                                        onClick={handleJoinNow}
                                         className="cursor-pointer text-xs flex flex-row items-center mt-4 px-4 py-3 rounded-full bg-[#171717]"
                                     >
                                         Join Now
@@ -461,7 +466,7 @@ const Home: React.FC = () => {
                                                 return (
                                                     <tr key={idx} className="border-b border-gray-200 text-center">
                                                     <td className="px-4 py-2">{date}</td>
-                                                    <td className="px-4 py-2">{session.skill?.name}</td>
+                                                    <td className="px-4 py-2">{session.skill_id}</td>
                                                     <td className="px-4 py-2">{isYouMentor ? session.user?.username : "You"}</td>
                                                     <td className="px-4 py-2">{isYouMentor ? "You" : session.mentor?.username}</td>
                                                     <td className="px-4 py-2">
@@ -470,7 +475,7 @@ const Home: React.FC = () => {
                                                         </span>
                                                     </td>
                                                     <td className="px-4 py-2 text-yellow-400">
-                                                        {isCompleted ? "★ ".repeat(rating) + "☆".repeat(5 - rating) : "—"}
+                                                        {isCompleted ? "★".repeat(rating) + "☆".repeat(5 - rating) : "—"}
                                                     </td>
                                                     </tr>
                                                 );

@@ -17,18 +17,42 @@ import Logo from ".././../../public/images/logo.png";
 const LandingPage: React.FC = () => {
   const supabase = createClient();
   const router = useRouter();
+  const [isAuth, setIsAuth] = useState(false);
 
   useEffect(() => {
     const checkIfAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-
+      
       if (!session) {
         router.push('/auth/login');
+      } else {
+        setIsAuth(true);
       }
+
+
     }
     checkIfAuth()
   }, [])
 
+  const handleGetStarted = () => {
+    router.push('/auth/register')
+  }
+
+  const handleLogin = () => {
+    router.push('/auth/login')
+  }
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error logging out:', error);
+    } else {
+    
+      setIsAuth(false);
+    
+      router.push('/login'); 
+    }
+  };
 
   return (
     <div className="flex flex-col items-center justify-center w-full bg-[#FDFCF9]">
@@ -38,10 +62,13 @@ const LandingPage: React.FC = () => {
             <p className="montserrat font-extrabold text-lg ml-2">SWAP: Skills Without A Price</p>
         </div>
         <div className="flex flex-row font-semibold items-center p-8">
-            <a className="p-7">Home</a>
+            <a href="/home" className="p-7">Home</a>
             <a className="p-7">About Us</a>
             <a className="p-7">Our Team</a>
-            <BlackButton style={{ padding: "10px 30px 10px 30px" }}>Log In</BlackButton>
+            {isAuth ? (
+              <BlackButton onClick={handleLogout} style={{ padding: "10px 30px 10px 30px" }}>Logout</BlackButton>
+                ) : (<BlackButton onClick={handleLogin} style={{ padding: "10px 30px 10px 30px" }}>Login</BlackButton>)}
+            
         </div>
       </nav>
       <section className="flex flex-row items-center justify-center">
@@ -49,6 +76,7 @@ const LandingPage: React.FC = () => {
           <p className="montserrat text-6xl font-bold">Unlock Potential, Not Wallets</p>
           <p>Join a vibrant community where knowledge is currency. Learn, share, and grow — together.</p>
           <OrangeButton 
+            onClick={handleGetStarted}
             style={{ padding: "20px 80px 20px 80px", marginTop: "2rem" }}
             >
               Get Started

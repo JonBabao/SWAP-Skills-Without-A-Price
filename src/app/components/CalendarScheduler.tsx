@@ -124,6 +124,94 @@ const LessonViewer = () => {
     );
   };
 
+const handleMarkAsDone = async (lessonId: string) => {
+  try {
+    const { data: lesson, error: fetchError } = await supabase
+      .from('schedules')
+      .select('*')
+      .eq('id', lessonId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+
+    const { error: deleteError } = await supabase
+      .from('schedules')
+      .delete()
+      .eq('id', lessonId);
+
+    if (deleteError) throw deleteError;
+
+   
+    const { error: sessionError } = await supabase
+      .from('sessions')
+      .insert({
+        date: lesson.date_time.split('T')[0],
+        time: lesson.date_time.split('T')[1].slice(0, 8),
+        skill_id: lesson.skill_id, 
+        user_id: lesson.user_id,
+        mentor_id: lesson.mentor_id,
+        status: 'completed',
+        rating: 3, 
+        mode: lesson.mode
+      });
+
+    if (sessionError) throw sessionError;
+
+
+    setLessons(prev => prev.filter(l => l.id !== lessonId));
+    setAllLessons(prev => prev.filter(l => l.id !== lessonId));
+
+  } catch (error) {
+    console.error("Error marking as done:", error);
+  }
+};
+
+const handleCancel = async (lessonId: string) => {
+  try {
+    // 1. Get the lesson details before deleting
+    const { data: lesson, error: fetchError } = await supabase
+      .from('schedules')
+      .select('*')
+      .eq('id', lessonId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // 2. Delete the lesson from schedules
+    const { error: deleteError } = await supabase
+      .from('schedules')
+      .delete()
+      .eq('id', lessonId);
+
+    if (deleteError) throw deleteError;
+
+    // 3. Add to sessions table as "cancelled"
+    const { error: sessionError } = await supabase
+      .from('sessions')
+      .insert({
+        date: lesson.date_time.split('T')[0],
+        time: lesson.date_time.split('T')[1].slice(0, 8),
+        skill_id: lesson.skill_id, 
+        user_id: lesson.title,
+        mentor_id: lesson.mentor_id,
+        status: 'cancelled',
+        rating: null, // No rating for cancelled sessions
+        mode: lesson.mode
+      });
+
+    if (sessionError) throw sessionError;
+
+    // 4. Update UI immediately
+    setLessons(prev => prev.filter(l => l.id !== lessonId));
+    setAllLessons(prev => prev.filter(l => l.id !== lessonId));
+
+  } catch (error) {
+    console.error("Error cancelling lesson:", error);
+  }
+};
+
+
   const renderCells = () => {
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(monthStart);
@@ -181,17 +269,23 @@ const LessonViewer = () => {
                 <span className="text-red-500 mr-2 text-xl">•</span>
                 {lesson.title}
               </h4>
-              <p className="text-sm mt-2"><strong>Learner:</strong> {lesson.user_id?.username}</p>
-              <p className="text-sm"><strong>Mentor:</strong> {lesson.mentor_id?.username}</p>
+              <p className="text-sm mt-2"><strong>Swapper 1:</strong> {lesson.user_id?.username}</p>
+              <p className="text-sm"><strong>Swapper 2:</strong> {lesson.mentor_id?.username}</p>
               <p className="text-sm">
                 <strong>Date:</strong> {format(new Date(lesson.date_time), "PPP | p")}
               </p>
               <p className="text-sm"><strong>Mode:</strong> {lesson.mode}</p>
               <div className="mt-3 flex gap-3 font-bold justify-center text-center">
-                <button className="swapOrangeBg text-white px-4 py-1 rounded-full text-sm ">
-                  View Details
+                <button
+                  onClick={() => handleMarkAsDone(lesson.id)}
+                  className="swapOrangeBg text-white px-4 py-1 rounded-full text-sm"
+                >
+                  Mark as Done
                 </button>
-                <button className="swapOrangeBg text-white px-4 py-1 rounded-full text-sm ">
+
+                <button 
+                  onClick={() => handleCancel(lesson.id)}
+                  className="swapOrangeBg text-white px-4 py-1 rounded-full text-sm ">
                   Cancel
                 </button>
               </div>
@@ -219,17 +313,17 @@ const LessonViewer = () => {
                     <span className="text-red-500 mr-2 text-xl">•</span>
                     {lesson.title}
                   </h4>
-                  <p className="text-sm mt-2"><strong>Learner:</strong> {lesson.user_id?.username}</p>
-                  <p className="text-sm"><strong>Mentor:</strong> {lesson.mentor_id?.username}</p>
+                  <p className="text-sm mt-2"><strong>Swapper 1:</strong> {lesson.user_id?.username}</p>
+                  <p className="text-sm"><strong>Swapper 2:</strong> {lesson.mentor_id?.username}</p>
                   <p className="text-sm">
                     <strong>Date:</strong> {format(new Date(lesson.date_time), "PPP | p")}
                   </p>
                   <p className="text-sm"><strong>Mode:</strong> {lesson.mode}</p>
                   <div className="mt-3 flex gap-3 font-bold justify-center text-center">
-                    <button className="swapOrangeBg text-white px-4 py-1 rounded-full text-sm ">
-                      View Details
+                    <button onClick={() => handleMarkAsDone(lesson.id)} className="swapOrangeBg text-white px-4 py-1 rounded-full text-sm ">
+                      Mark as Done
                     </button>
-                    <button className="swapOrangeBg text-white px-4 py-1 rounded-full text-sm ">
+                    <button onClick={() => handleCancel(lesson.id)} className="swapOrangeBg text-white px-4 py-1 rounded-full text-sm ">
                       Cancel
                     </button>
                   </div>

@@ -6,10 +6,14 @@ import BlackButton from "../styles/blackButton";
 import { createClient } from '../../../lib/supabase/client'
 import { MessageCircle, Bell, Plus } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { LogOut } from 'lucide-react';
+
 
 const TopNav: React.FC = () => {
 
     const supabase = createClient();
+    const router = useRouter();
 
     const [userData, setUserData] = useState();
 
@@ -35,6 +39,15 @@ const TopNav: React.FC = () => {
         fetchUserData();
     }, []);
 
+      const handleLogout = async () => {
+            const { error } = await supabase.auth.signOut();
+            if (!error) {
+            router.push('/auth/login'); 
+            } else {
+            console.error('Logout error:', error);
+            }
+        };
+
     return(
         <div className="hidden fixed lg:flex flex-row justify-between items-center bg-[#FBF8F2] inset-0 z-50 w-full h-20 text-[#2e2e2e]">
             {userData ? (
@@ -51,9 +64,9 @@ const TopNav: React.FC = () => {
                     <Link href="/chat" className="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
                         <MessageCircle  />
                     </Link>
-                    <Link href='/' className="h-10 w-10 p-2 bg-gray-200 rounded-full" >
-                        <Bell />
-                    </Link>
+                    <button onClick={handleLogout} className="h-10 w-10 p-2 bg-gray-200 rounded-full cursor-pointer" >
+                        <LogOut />
+                    </button>
                     <Link href='/dashboard'>
                         <img src={userData.avatar_url} className="h-12 w-12 rounded-full mr-8" />
                     </Link>

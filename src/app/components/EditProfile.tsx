@@ -5,6 +5,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { createClient } from '../../../lib/supabase/client';
 import ProfilePlaceholder from '../../../public/images/profilePlaceholder.jpg'
+import { useRouter } from 'next/navigation';
 
 interface Skill {
   id: number;
@@ -21,6 +22,9 @@ const EditProfile: React.FC = () => {
     const [skills, setSkills] = useState<Skill[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+
+    
+    const router = useRouter()
 
     // Fetch user profile and skills on component mount
     useEffect(() => {
@@ -111,206 +115,155 @@ const EditProfile: React.FC = () => {
         e.preventDefault();
         setSaving(true);
 
-    try {
-        console.log('[1] Starting profile update process...');
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (userError) {
-            console.error('[1.1] Auth error:', userError);
-            throw new Error('Authentication error');
-        }
-        
-        if (!user) {
-            console.error('[1.2] No authenticated user');
-            throw new Error('User not authenticated');
-        }
+        try {
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+            if (userError || !user) throw new Error(userError?.message || 'User not authenticated');
 
-        console.log('[2] Authenticated user:', user.id);
-
-        // Upload new skill images to storage and get URLs
-        console.log('[3] Processing skills with images...');
-        const updatedSkills = await Promise.all(
-            skills.map(async (skill, index) => {
-                console.log(`[3.${index + 1}] Processing skill: ${skill.name || 'unnamed'}`);
-                
+            // Upload new skill images and get URLs
+            const updatedSkills = await Promise.all(
+            skills.map(async (skill) => {
                 if (skill.images.length > 0) {
-                    console.log(`[3.${index + 1}.1] Found ${skill.images.length} images to upload`);
-                    
                 const uploadedUrls = await Promise.all(
-                    skill.images.map(async (file, fileIndex) => {
-                        const fileName = `${user.id}-${Date.now()}-${fileIndex}-${file.name.replace(/\s+/g, '-')}`;
+                    skill.images.map(async (file) => {
+                    const fileName = `${user.id}-${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
+                    const { error } = await supabase.storage
+                        .from('images')
+                        .upload(`skill-pictures/${fileName}`, file, {
+                        upsert: false,
+                        contentType: file.type
+                        });
+                    if (error) throw error;
                     
-                        try {
-                            // First check if user is authenticated
-                            const { data: { session } } = await supabase.auth.getSession();
-                            if (!session) throw new Error('No active session');
-                            
-                            // Upload with proper error handling
-                            const { data, error } = await supabase.storage
-                                .from('images')
-                                .upload(`skill-pictures/${fileName}`, file, {
-                                upsert: false,
-                                contentType: file.type
-                                });
-
-                            if (error) throw error;
-                            
-                            // Get public URL
-                            const { data: { publicUrl } } = supabase.storage
-                                .from('images')
-                                .getPublicUrl(`skill-pictures/${fileName}`);
-                            
-                            return publicUrl;
-                        } catch (uploadError) {
-                            console.error(`Failed to upload ${fileName}:`, uploadError);
-                            throw uploadError;
-                        }
+                    const { data: { publicUrl } } = supabase.storage
+                        .from('images')
+                        .getPublicUrl(`skill-pictures/${fileName}`);
+                    
+                    return publicUrl;
                     })
                 );
-                return { ...skill, previews: [...skill.previews, ...uploadedUrls] };
-            }
-            return skill;
-        })
-        );
 
-        console.log('[4] Skills processed, updating user profile...');
-        const skillsOffered = updatedSkills.map(skill => skill.name).filter(name => name);
-        console.log('[4.1] Skills to save:', skillsOffered);
+                const existingPermanentUrls = skill.previews.filter(
+                    url => !url.startsWith('blob:')
+                );
+                return { ...skill, previews: [...existingPermanentUrls, ...uploadedUrls] };
+                }
+                return skill;
+            })
+            );
 
-        const profileUpdateData = {
-        skills_offered: skillsOffered,
-        birth_date: birthDate?.toISOString(),
-        first_name: profile?.first_name,
-        last_name: profile?.last_name,
-        email: profile?.email,
-        phone: profile?.phone,
-        location: profile?.location,
-        language: profile?.language,
-        bio: profile?.bio,
-        social_links: {
-            twitter: profile?.social_links?.twitter || null,
-            linkedin: profile?.social_links?.linkedin || null,
-            facebook: profile?.social_links?.facebook || null,
-            instagram: profile?.social_links?.instagram || null
-        },
-        avatar_url: profile?.avatar_url || null
-        };
+            // Prepare profile update data
+            const skillsOffered = updatedSkills.map(skill => skill.name).filter(name => name);
+            const profileUpdateData = {
+            skills_offered: skillsOffered,
+            // ... other profile fields
+            };
 
-    
-        console.log('[4.2] Profile update data:', profileUpdateData);
-
-        const { error: profileError } = await supabase
+            // Update user profile
+            const { error: profileError } = await supabase
             .from('users')
             .update(profileUpdateData)
             .eq('id', user.id);
+            if (profileError) throw profileError;
 
-        if (profileError) {
-            console.error('[4.3] Profile update error:', profileError);
-            throw profileError;
-        }
-        console.log('[4.4] Profile updated successfully');
-
-        console.log('[5] Updating user_skills_offered table...');
-        const skillsUpsert = await Promise.all(
+            // Process each skill - create if doesn't exist
+            const skillsUpsert = await Promise.all(
             updatedSkills
-            .filter(skill => skill.name)
-            .map(async (skill) => {
-                const { data: skillData } = await supabase
-                .from('skills')
-                .select('id')
-                .eq('name', skill.name)
-                .single();
+                .filter(skill => skill.name)
+                .map(async (skill) => {
+                // Check if skill exists
+                let skillId: number;
+                const { data: existingSkill } = await supabase
+                    .from('skills')
+                    .select('id')
+                    .eq('name', skill.name)
+                    .single();
 
-                const skillId = skillData?.id || (await supabase
-                .from('skills')
-                .insert({ name: skill.name })
-                .select()
-                .single()
-                ).data.id;
+                if (existingSkill) {
+                    skillId = existingSkill.id;
+                } else {
+                    // Create new skill if it doesn't exist
+                    const { data: newSkill, error: insertError } = await supabase
+                    .from('skills')
+                    .insert({ name: skill.name })
+                    .select()
+                    .single();
+                    
+                    if (insertError) throw insertError;
+                    skillId = newSkill.id;
+                }
 
                 return {
-                user_id: user.id,
-                skill_id: skillId,
-                images: skill.previews
+                    user_id: user.id,
+                    skill_id: skillId,
+                    images: skill.previews
                 };
-            })
-        );
+                })
+            );
 
-        // Upsert all records in one operation
-        const { error: upsertError } = await supabase
+            // Upsert the user_skills_offered records
+            const { error: upsertError } = await supabase
             .from('user_skills_offered')
             .upsert(skillsUpsert, {
-            onConflict: 'user_id,skill_id',
-            ignoreDuplicates: false
+                onConflict: 'user_id,skill_id'
             });
+            if (upsertError) throw upsertError;
+                alert('Profile updated successfully!');
+                router.push('/dashboard')
+            } catch (error) {
+                console.error('Profile update failed:', error);
+                alert(`Failed to update profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            } finally {
+                setSaving(false);
+            }
+        };
 
-        if (upsertError) throw upsertError;
+            const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+            if (!e.target.files || e.target.files.length === 0) {
+                return;
+            }
 
-      
+            setSaving(true);
+            const file = e.target.files[0];
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${profile?.id || 'unknown'}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+            const filePath = `profile-pictures/${fileName}`;
 
-        console.log('[6] Profile update complete');
-        alert('Profile updated successfully!');
-        } catch (error) {
-        console.error('[ERROR] Profile update failed:', {
-            error,
-            timestamp: new Date().toISOString(),
-            user: user?.id || 'unknown',  // Fixed reference
-            skillsState: skills
-        });
-        alert('Failed to update profile. Please try again.');
-        } finally {
-        console.log('[7] Finalizing update process');
-        setSaving(false);
-        }
-    };
+            try {
+                // First check if user is authenticated
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) throw new Error('No authenticated user');
 
-        const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files || e.target.files.length === 0) {
-            return;
-        }
+                // Upload the file
+                const { error: uploadError } = await supabase.storage
+                .from('images')
+                .upload(filePath, file, {
+                    upsert: true,
+                    contentType: file.type
+                });
 
-        setSaving(true);
-        const file = e.target.files[0];
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${profile?.id || 'unknown'}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        const filePath = `profile-pictures/${fileName}`;
+                if (uploadError) throw uploadError;
 
-        try {
-            // First check if user is authenticated
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('No authenticated user');
+                // Get the public URL
+                const { data: { publicUrl } } = supabase.storage
+                .from('images')
+                .getPublicUrl(filePath);
 
-            // Upload the file
-            const { error: uploadError } = await supabase.storage
-            .from('images')
-            .upload(filePath, file, {
-                upsert: true,
-                contentType: file.type
-            });
+                // Update the user's avatar_url in the database
+                const { error: updateError } = await supabase
+                .from('users')
+                .update({ avatar_url: publicUrl })
+                .eq('id', user.id);
 
-            if (uploadError) throw uploadError;
+                if (updateError) throw updateError;
 
-            // Get the public URL
-            const { data: { publicUrl } } = supabase.storage
-            .from('images')
-            .getPublicUrl(filePath);
-
-            // Update the user's avatar_url in the database
-            const { error: updateError } = await supabase
-            .from('users')
-            .update({ avatar_url: publicUrl })
-            .eq('id', user.id);
-
-            if (updateError) throw updateError;
-
-            // Update local state
-            setProfile({ ...profile, avatar_url: publicUrl });
-            alert('Profile picture updated successfully!');
-        } catch (error) {
-            console.error('Error uploading avatar:', error);
-            alert('Error uploading avatar. Please try again.');
-        } finally {
-            setSaving(false);
+                // Update local state
+                setProfile({ ...profile, avatar_url: publicUrl });
+                alert('Profile picture updated successfully!');
+            } catch (error) {
+                console.error('Error uploading avatar:', error);
+                alert('Error uploading avatar. Please try again.');
+            } finally {
+                setSaving(false);
         }
     };
 
