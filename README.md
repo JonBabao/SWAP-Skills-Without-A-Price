@@ -15,10 +15,10 @@
 
 <p align="center">
   <b>CS-3202</b><br>
-  <a href="https://github.com/FaithAllyson">Faith Allyson R. Mendoza</a><br>
-  <a href="https://github.com/chustinecantal">Chustine Mae B. Cantal</a><br>
-  <a href="https://github.com/JonBabao">Jon Endrick M. Babao</a><br>
   <a href="https://github.com/reinarmedilla">Reina Liz B. Armedilla</a><br>
+  <a href="https://github.com/JonBabao">Jon Endrick M. Babao</a><br>
+  <a href="https://github.com/chustinecantal">Chustine Mae B. Cantal</a><br>
+  <a href="https://github.com/FaithAllyson">Faith Allyson R. Mendoza</a><br>
 </p>
 
 <hr>
@@ -33,9 +33,40 @@
 
 ---
 
-## 📍 Overview
+## 🧠 Overview
 
-**SWAP: Skills Without A Price** is a skill-sharing platform that connects users who are willing to exchange knowledge and abilities without the need for monetary transactions. This app is built using the [Next.js](https://nextjs.org) framework, offering server-side rendering, fast performance, and developer-friendly tooling.
+What if learning new skills didn’t cost a dime?
+
+What if your ability to grow didn’t depend on your wallet — but on your willingness to share?
+
+Welcome to SWAP: Skills Without A Price — a web-based platform reimagining education through exchange. It’s not just an app — it’s a movement. A digital bazaar where skills are the currency, mentorship is mutual, and growth is reciprocal.
+
+Whether you're a student seeking to master Python in exchange for math tutoring, a freelancer swapping web design for lessons, or a career shifter learning graphic design by offering business coaching — SWAP is where connections become classrooms.
+
+We believe that everyone has a superpower. SWAP is where you unlock it — and trade it for another.
+
+More than just peer-to-peer learning, SWAP is a community:
+- A place where hobbies turn into hustles.
+- Where mentorship is casual, personal, and powerful.
+- Where barriers — financial, geographic, or institutional — vanish.
+
+No subscriptions. No hidden fees. No gatekeepers.
+Just humans helping humans, one skill at a time.
+
+Join the barter revolution. Learn freely. Teach generously. Grow together.
+
+## 🌍 Why SWAP?
+Because everyone has something to teach — and something to learn.
+
+Traditional learning models rely on money. SWAP relies on people. It’s a space where students, freelancers, career shifters, and lifelong learners come together to teach, learn, and grow through trust-based skill swaps.
+
+## 🚀 Features
+- 👤 Profile creation with teach & learn skills
+- 🔍 Smart skill-matching & filtering
+- 💬 Real-time messaging system
+- 🤝 Peer-to-peer session scheduling
+- ⭐ Ratings & reviews to build community trust
+- 📊 Personalized dashboard to track learning goals & teaching impact
 
 ---
 
@@ -97,27 +128,13 @@ For more info, read the [Next.js deployment documentation](https://nextjs.org/do
 
 The development of **SWAP: Skills Without A Price**, a skill-sharing web application, was made possible through the collaborative efforts of a passionate and talented team. Each member brought unique strengths to the project, contributing significantly to its overall success. The following acknowledgments highlight the roles and key contributions of each team member:
 
-#### [ENDRICK](https://github.com/JonBabao): Full Stack Developer / Project Lead
-- Led the planning, integration, and implementation of both frontend and backend systems.  
-- Managed the application’s architecture, routing, and deployment setup using Next.js.  
-- Oversaw the GitHub repository, organized development sprints, and maintained code consistency.  
-- Ensured timely delivery of milestones and guided the project’s technical direction.  
+#### [ENDRICK](https://github.com/JonBabao): Full Stack Developer
 
-#### [REINA](https://github.com/reinarmedilla): UI/UX Designer Lead 
-- Led the user interface and user experience design efforts.  
-- Designed the app’s layout, color schemes, wireframes, and component mockups.  
-- Ensured that usability and accessibility standards were met in all visual components.  
-- Contributed innovative ideas that enhanced the app's intuitiveness and visual appeal.  
+#### [REINA](https://github.com/reinarmedilla): Frontend Developer
 
-#### [FAITH](https://github.com/FaithAllyson): UI Designer/Developer 
-- Assisted in the creation of user interface elements and visual design assets.  
-- Participated in brainstorming sessions and iterative design improvements.  
-- Helped maintain the consistency of design components across all app pages.  
+#### [FAITH](https://github.com/FaithAllyson): Frontend Developer 
 
-#### [CHUSTINE](https://github.com/chustinecantal): Frontend Developer  
-- Implemented reusable React components with responsive design.  
-- Integrated frontend logic with backend APIs.  
-- Enhanced UI interactivity and improved user flow across features such as registration, profile browsing, and session scheduling.  
+#### [CHUSTINE](https://github.com/chustinecantal): Backend Developer 
 
 ---
 
