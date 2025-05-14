@@ -66,7 +66,7 @@ Traditional learning models rely on money. SWAP relies on people. It’s a space
 - 💬 Real-time messaging system
 - 🤝 Peer-to-peer session scheduling
 - ⭐ Ratings & reviews to build community trust
-- 📊 Personalized dashboard to track learning goals & teaching impact
+- 📊 Personalized dashboard to track learning goals & teaching impact 
 
 ---
 
@@ -128,13 +128,10 @@ For more info, read the [Next.js deployment documentation](https://nextjs.org/do
 
 The development of **SWAP: Skills Without A Price**, a skill-sharing web application, was made possible through the collaborative efforts of a passionate and talented team. Each member brought unique strengths to the project, contributing significantly to its overall success. The following acknowledgments highlight the roles and key contributions of each team member:
 
-#### [ENDRICK](https://github.com/JonBabao): Full Stack Developer
-
 #### [REINA](https://github.com/reinarmedilla): Frontend Developer
-
+#### [ENDRICK](https://github.com/JonBabao): Full Stack Developer
+#### [CHUSTINE](https://github.com/chustinecantal): Backend Developer
 #### [FAITH](https://github.com/FaithAllyson): Frontend Developer 
-
-#### [CHUSTINE](https://github.com/chustinecantal): Backend Developer 
 
 ---
 
