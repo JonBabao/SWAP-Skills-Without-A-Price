@@ -22,6 +22,8 @@ const EditProfile: React.FC = () => {
     const [skills, setSkills] = useState<Skill[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [wantedSkills, setWantedSkills] = useState<string[]>([]);
+
 
     
     const router = useRouter()
@@ -42,6 +44,7 @@ const EditProfile: React.FC = () => {
         if (profileData) {
             setProfile(profileData);
             setBirthDate(profileData.birth_date ? new Date(profileData.birth_date) : null);
+            setWantedSkills(profileData.skills_wanted || []);
         
             // Fetch user's offered skills with images
         const { data: skillsData } = await supabase
@@ -155,6 +158,7 @@ const EditProfile: React.FC = () => {
             const skillsOffered = updatedSkills.map(skill => skill.name).filter(name => name);
             const profileUpdateData = {
             skills_offered: skillsOffered,
+            skills_wanted: wantedSkills,
             // ... other profile fields
             };
 
@@ -447,6 +451,59 @@ const EditProfile: React.FC = () => {
                         </div>
                     </div>
 
+                    {/* Skills Wanted Section */}
+                    <div className="border rounded-lg overflow-hidden mt-4">
+                    <div className="p-4 bg-gray-50">
+                        <h3 className="font-medium">Skills I Want to Learn</h3>
+                        <p className="text-sm text-gray-500">Add skills you're interested in learning</p>
+                    </div>
+                    <div className="p-4">
+                        <div className="flex flex-wrap gap-2 mb-2">
+                        {wantedSkills.map((skill, index) => (
+                            <div key={index} className="flex items-center bg-gray-100 px-3 py-1 rounded-full">
+                            <span>{skill}</span>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                setWantedSkills(wantedSkills.filter((_, i) => i !== index));
+                                }}
+                                className="ml-2 text-gray-500 hover:text-red-500"
+                            >
+                                <X size={14} />
+                            </button>
+                            </div>
+                        ))}
+                        </div>
+                        <div className="flex">
+                        <input
+                            type="text"
+                            placeholder="Add a skill you want to learn"
+                            className="flex-1 border p-2 rounded-l"
+                            onKeyDown={(e) => {
+                            if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                                e.preventDefault();
+                                setWantedSkills([...wantedSkills, e.currentTarget.value.trim()]);
+                                e.currentTarget.value = '';
+                            }
+                            }}
+                        />
+                        <button
+                            type="button"
+                            className="bg-[#FF7A59] hover:bg-orange-500 text-white ml-1 px-3 rounded-xl"
+                            onClick={() => {
+                            const input = document.querySelector('input[placeholder="Add a skill you want to learn"]') as HTMLInputElement;
+                            if (input?.value.trim()) {
+                                setWantedSkills([...wantedSkills, input.value.trim()]);
+                                input.value = '';
+                            }
+                            }}
+                        >
+                            Add
+                        </button>
+                        </div>
+                    </div>
+                    </div>
+
                     <div className="flex gap-8">
                         <input 
                         type="text" 
@@ -509,7 +566,7 @@ const EditProfile: React.FC = () => {
                 <div className="col-span-2 flex justify-end mt-6">
                     <button 
                         type="submit"
-                        className="bg-red-400 hover:bg-red-500 text-white px-6 py-2 rounded-full flex items-center gap-2"
+                        className="bg-[#FF7A59] hover:bg-orange-500 text-white px-6 py-2 rounded-full flex items-center gap-2"
                         disabled={saving}
                     >
                         {saving ? 'Saving...' : 'Save & Update'}
