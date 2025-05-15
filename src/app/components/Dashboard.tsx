@@ -160,85 +160,68 @@ const Home: React.FC = () => {
         fetchUserData();
     }, []);
 
-    const acceptPending = async (req: any) => {
+ const acceptPending = async (req: any) => {
     try {
         const titleName = `${req.user_skill?.name} and ${req.mentor_skill?.name}`;
         const dateTime = new Date(req.date_time);
         
         // 1. Create the schedule with both skills
         const { error: scheduleError } = await supabase
-        .from('schedules')
-        .insert({
-            title: titleName,
-            user_id: req.user.id,
-            mentor_id: req.mentor.id,
-            date_time: req.date_time,
-            mode: req.mode,
-            user_skill: req.user_skill?.id,
-            mentor_skill: req.mentor_skill?.id
-        });
+            .from('schedules')
+            .insert({
+                title: titleName,
+                user_id: req.user.id,
+                mentor_id: req.mentor.id,
+                date_time: req.date_time,
+                mode: req.mode,
+                user_skill: req.user_skill?.id,
+                mentor_skill: req.mentor_skill?.id
+            });
 
         if (scheduleError) throw scheduleError;
 
-        // 2. Create the session record
-        const { error: sessionError } = await supabase
-        .from('sessions')
-        .insert({
-            date: dateTime.toISOString().split('T')[0],
-            time: dateTime.toTimeString().split(' ')[0],
-            user_id: req.user.id,
-            mentor_id: req.mentor.id,
-            status: 'completed',
-            rating: 5,
-            mode: req.mode,
-            mentor_skill: req.mentor_skill?.id,
-            user_skill: req.user_skill?.id
-        });
-
-        if (sessionError) throw sessionError;
-
-        // 3. Create the swap record
+        // 2. Create the swap record (without session creation)
         const { error: swapError } = await supabase
-        .from('swaps')
-        .insert({
-            user_id: req.user.id,
-            mentor_id: req.mentor.id,
-            user_skill: req.user_skill?.id,
-            mentor_skill: req.mentor_skill?.id,
-            last_session_date: dateTime.toISOString().split('T')[0],
-            status: false, // Default to false (active)
-            rating: null, // No rating initially
-            completed: false,
-            date_completed: null,
-            user_skill_progress: 0, // Starting progress
-            mentor_skill_progress: 0  // Starting progress
-        });
+            .from('swaps')
+            .insert({
+                user_id: req.user.id,
+                mentor_id: req.mentor.id,
+                user_skill: req.user_skill?.id,
+                mentor_skill: req.mentor_skill?.id,
+                last_session_date: dateTime.toISOString().split('T')[0],
+                status: true,
+                rating: null,
+                completed: false,
+                date_completed: null,
+                user_skill_progress: 0,
+                mentor_skill_progress: 0
+            });
 
         if (swapError) throw swapError;
 
-        // 4. Update the request status
+        // 3. Update the request status
         const { error: updateRequestsError } = await supabase
-        .from('requests')
-        .update({ status: true })
-        .eq('id', req.id);
+            .from('requests')
+            .update({ status: true })
+            .eq('id', req.id);
 
         if (updateRequestsError) throw updateRequestsError;
 
-        // 5. Update local state to remove the request
+        // 4. Update local state to remove the request
         setRequests(prev => prev.filter(r =>
-        !(
-            r.user.id === req.user.id &&
-            r.mentor.id === req.mentor.id &&
-            r.date_time === req.date_time
-        )
+            !(
+                r.user.id === req.user.id &&
+                r.mentor.id === req.mentor.id &&
+                r.date_time === req.date_time
+            )
         ));
 
-        console.log("Request accepted, records created successfully");
+        console.log("Request accepted and swap created successfully");
     } catch (error) {
         console.error("Error in acceptPending:", error);
-        // Optionally show error to user
+       
     }
-    };
+};
 
     const declinePending = async (req: any) => {
         const { error: updateRequestsError } = await supabase
