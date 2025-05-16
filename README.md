@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/JonBabao/SWAP-Skills-Without-A-Price/blob/master/public/images/logoBig.png" width="250" />
+  <img src="https://github.com/JonBabao/SWAP-Skills-Without-A-Price/blob/master/public/images/logoBig.png" width="80" />
 </p>
 
 <h1 align="center">SWAP: Skills Without A Price</h1>
